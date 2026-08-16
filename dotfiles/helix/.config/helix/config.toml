@@ -40,10 +40,14 @@ render = true
 "Cmd-s" = ":write"
 "Cmd-S" = ":reload-all"
 
+[keys.normal.space]
+q = ":quit"
+w = ":write"
+space = "command_mode"
+
 [keys.insert]
 "Cmd-s" = ":write"
 
 [keys.select]
 "Cmd-/" = "toggle_comments"
 "Cmd-s" = ":write"
-
