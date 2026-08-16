@@ -1,10 +1,20 @@
 export EDITOR=hx
 export GEM_HOME="$HOME/.gem"
-export PATH="$GEM_HOME/bin:$PATH"
+export PATH="$HOME/.local/bin:$GEM_HOME/bin:$PATH"
+export NIXPKGS="$HOME/.nix-profile/share/nixpkgs"
+export NIX_PATH="nixpkgs=$NIXPKGS"
 
 alias jj-sync='jj git fetch && jj rebase -d main'
 alias nix-rebuild='"$HOME/.config/nix/rebuild.sh"'
 alias ze='zellij'
+
+nd() {
+  if [[ -f flake.nix ]]; then
+    nix develop "$@" --command zsh -i
+  else
+    nix-shell "$@" --command 'exec zsh -i'
+  fi
+}
 
 if [ -r "$HOME/.nix-profile/share/zsh-autosuggestions/zsh-autosuggestions.zsh" ]; then
   source "$HOME/.nix-profile/share/zsh-autosuggestions/zsh-autosuggestions.zsh"
@@ -25,10 +35,6 @@ fi
 
 if command -v zoxide >/dev/null 2>&1; then
   eval "$(zoxide init zsh)"
-fi
-
-if command -v direnv >/dev/null 2>&1; then
-  eval "$(direnv hook zsh)"
 fi
 
 if command -v starship >/dev/null 2>&1; then

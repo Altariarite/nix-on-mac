@@ -1,76 +1,70 @@
-let
-  sources = import ./npins;
-  pkgs = import sources.nixpkgs { };
-in
+{ pkgs, basecampCli }:
 
-with pkgs; [
-    # Dotfile management
-    stow
-    npins
+with pkgs;
+[
+  # Dotfile management
+  stow
 
-    # Nix command documentation
-    nix.man
+  # Nix command documentation
+  nix.man
 
-    # Shells and shell integrations
-    zsh
-    zsh-autosuggestions
-    zsh-syntax-highlighting
-    zsh-history-substring-search
-    fish
-    starship
-    fzf
-    zoxide
-    direnv
-    nix-direnv
+  # Shells and shell integrations
+  fish
+  zsh
+  zsh-autosuggestions
+  zsh-syntax-highlighting
+  zsh-history-substring-search
+  starship
+  fzf
+  zoxide
 
-    # Terminal/editor tools
-    helix
-    zellij
-    tealdeer
+  # Terminal/editor tools
+  helix
+  zellij
+  tealdeer
 
-    # Version control
-    jujutsu
-    jjui
-    jj-starship
-    git
-    gh
-    delta
+  # Version control
+  jujutsu
+  jjui
+  jj-starship
+  git
+  gh
+  delta
 
-    # CLI utilities
-    fd
-    ripgrep
-    coreutils
-    wget
-    tree-sitter
-    glow
-    uv
-    ffmpeg
-    zola
+  # CLI utilities
+  fd
+  ripgrep
+  coreutils
+  wget
+  tree-sitter
+  glow
+  uv
+  ffmpeg
+  zola
+  basecampCli
 
-    # macOS applications
-    xld
+  # macOS applications
+  xld
 
-    # Global language support
-    nixfmt
-    nil
-    taplo
-    ruby_4_0
-    julia
-    sbcl
-    rlwrap
-    clojure
-    clojure-lsp
-    clj-kondo
-    babashka
+  # Global language support
+  nixfmt
+  nil
+  taplo
+  ruby_4_0
+  julia
+  sbcl
+  rlwrap
+  babashka
+  swi-prolog
 
-    # Fonts
-    nerd-fonts.fira-code
-    nerd-fonts.iosevka
-    nerd-fonts.geist-mono
-    nerd-fonts.hack
-    nerd-fonts.commit-mono
+  # Fonts
+  nerd-fonts.fira-code
+  nerd-fonts.iosevka
+  nerd-fonts.geist-mono
+  nerd-fonts.hack
+  nerd-fonts.commit-mono
 
-    # AI
-    codex
-    opencode
+  # AI
+  opencode
+  claude-code
 ]

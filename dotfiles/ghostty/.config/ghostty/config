@@ -1,6 +1,7 @@
 theme = Alabaster
 font-family = SF Mono
 font-size = 17
+command = /Users/altaria/.nix-profile/bin/fish
 
 keybind = super+j=goto_split:down
 keybind = super+k=goto_split:up

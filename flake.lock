@@ -1,0 +1,48 @@
+{
+  "nodes": {
+    "basecamp-cli": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1787538161,
+        "narHash": "sha256-ZHh/V5QNv7rmyK9ObfIb5W+GGzhraGl62R085ceRF80=",
+        "owner": "basecamp",
+        "repo": "basecamp-cli",
+        "rev": "5f15ad632c136aa1b5053abe574bf66e6bbcbde1",
+        "type": "github"
+      },
+      "original": {
+        "owner": "basecamp",
+        "repo": "basecamp-cli",
+        "type": "github"
+      }
+    },
+    "nixpkgs": {
+      "locked": {
+        "lastModified": 1788490200,
+        "narHash": "sha256-wX7GJ/pe7147AKZPfmVGIqFnEdlrnAJRhlhciaeKzWs=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "e5ead30d0824debba629dcf0720abeddee57b7d6",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixpkgs-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "root": {
+      "inputs": {
+        "basecamp-cli": "basecamp-cli",
+        "nixpkgs": "nixpkgs"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}

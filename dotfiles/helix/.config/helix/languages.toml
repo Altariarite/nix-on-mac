@@ -19,5 +19,17 @@ language-servers = ["expert"]
 formatter = { command = "mix", args = ["format", "-"] }
 
 [[language]]
+name = "ocaml"
+language-servers = ["ocamllsp"]
+auto-format = true
+formatter = { command = "ocamlformat", args = ["--enable-outside-detected-project", "--name", "%{buffer_name}", "-"] }
+
+[[language]]
+name = "ocaml-interface"
+language-servers = ["ocamllsp"]
+auto-format = true
+formatter = { command = "ocamlformat", args = ["--enable-outside-detected-project", "--name", "%{buffer_name}", "-"] }
+
+[[language]]
 name = "ruby"
 language-servers = ["ruby-lsp"]
