@@ -50,6 +50,7 @@ with pkgs;
   nixfmt
   nil
   taplo
+  beamPackages.expert # Elixir language server (used by Helix and VS Code)
   ruby_4_0
   julia
   sbcl
