@@ -1,4 +1,8 @@
-{ pkgs, basecampCli }:
+{
+  pkgs,
+  basecampCli,
+  lemEditor,
+}:
 
 with pkgs;
 [
@@ -20,8 +24,11 @@ with pkgs;
 
   # Terminal/editor tools
   helix
+  (import ./emacs.nix { inherit pkgs; })
+  lemEditor
   zellij
   tealdeer
+  vifm
 
   # Version control
   jujutsu
@@ -34,6 +41,7 @@ with pkgs;
   # CLI utilities
   fd
   ripgrep
+  tre-command
   coreutils
   wget
   tree-sitter
@@ -51,6 +59,15 @@ with pkgs;
   nil
   taplo
   beamPackages.expert # Elixir language server (used by Helix and VS Code)
+  beamPackages.elixir # `mix format`, the Elixir formatter Helix invokes
+  ocamlPackages.ocaml-lsp
+  ocamlPackages.ocamlformat
+  ocamlPackages.utop
+  rust-analyzer
+  rustfmt
+  clippy # rust-analyzer's configured `check` command
+  ruby-lsp
+  rubocop
   ruby_4_0
   julia
   sbcl

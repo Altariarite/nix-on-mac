@@ -5,7 +5,7 @@ dotfiles. The files have deliberately separate jobs:
 
 - `package.nix` is the readable package list.
 - `flake.nix` is a thin wrapper that supplies pinned packages and builds the list.
-- `rebuild.sh` installs the built profile and restows the dotfiles.
+- `rebuild.sh` upgrades the modern Nix profile and restows the dotfiles.
 
 The installed profile also exposes the pinned source at
 `~/.nix-profile/share/nixpkgs`. Fish and Zsh export this as `NIXPKGS` and set
@@ -20,13 +20,39 @@ pkgs.mkShell {
 }
 ```
 
-Update the package bundle and all dotfiles together:
+Apply changes to `package.nix` or the local flake from any directory:
+
+```sh
+nix profile upgrade --all
+```
+
+The profile tracks `path:/Users/altaria/.config/nix#default` as one package
+bundle. It re-evaluates the local files and installs the result; it does not
+update the pins in `flake.lock`. To update dependencies too, run `nix flake update`
+in this repository first, then upgrade the profile.
+
+The active profile is `~/.local/state/nix/profiles/packages`, reached through
+`~/.nix-profile`. Manage it with `nix profile`, not `nix-env`.
+
+To also restow all dotfiles, use the optional wrapper:
 
 ```sh
 ./rebuild.sh
 ```
 
-The `nix-rebuild` shell alias runs the same script.
+Any existing `nix-rebuild` alias pointing to this script continues to work.
+Stow links reflect edits to existing config files immediately; new Stow packages
+still need to be linked.
+
+The previous legacy profile and its generations remain at
+`~/.local/state/nix/profiles/profile`. To switch back if needed:
+
+```sh
+ln -sfn "$HOME/.local/state/nix/profiles/profile" "$HOME/.nix-profile"
+```
+
+After switching back, use the legacy `nix-env` workflow; the updated wrapper
+expects the modern profile.
 
 Preview a package build without changing the installed profile:
 
@@ -34,11 +60,15 @@ Preview a package build without changing the installed profile:
 nix build --no-link path:.#default
 ```
 
-Update all pinned inputs, including the official Basecamp CLI:
+Update all pinned inputs, including the official Basecamp CLI and Lem:
 
 ```sh
 nix flake update
 ```
+
+Lem's terminal editor comes from its official flake, pinned in `flake.lock`.
+Launch it with `lem` or `lem path/to/file`. Exit with `Ctrl-x Ctrl-c`.
+To update only Lem, run `nix flake update lem`, then `nix profile upgrade nix`.
 
 Codex is installed separately with OpenAI's standalone installer so it can
 track the fast-moving CLI releases independently of the pinned Nix bundle:
@@ -80,18 +110,25 @@ to `nix-shell` and the project's `shell.nix`. Arguments are passed through to th
 selected Nix command.
 Exit the shell to return to the normal environment.
 
-For OCaml editor support, expose the language server and formatter from the
-project's `shell.nix`:
+Language servers, formatters and REPLs live in `package.nix`, not in project
+shells. A project's `shell.nix` carries only what builds and runs that project,
+so entering `nd` adds the compiler on top of editor tooling that is already on
+`PATH`:
 
 ```nix
-packages = [
-  pkgs.ocamlPackages.ocaml-lsp
-  pkgs.ocamlPackages.ocamlformat
-];
+{ pkgs ? import <nixpkgs> { } }:
+
+pkgs.mkShell {
+  packages = with pkgs; [ ocamlPackages.ocaml dune_3 ];
+}
 ```
 
-Then launch either editor from the development shell so it inherits those
-project-local tools:
+`dotfiles/helix/.config/helix/languages.toml` names the tools Helix expects,
+and each one is in `package.nix`: `ocamllsp` and `ocamlformat`, `rust-analyzer`
+with `rustfmt` and `clippy`, `ruby-lsp` and `rubocop`, `expert` and Elixir's
+`mix format`, plus `nixfmt`, `nil` and `taplo`.
+
+Launch the editor from the project shell so it also sees the project's compiler:
 
 ```sh
 nd
@@ -100,20 +137,30 @@ hx .
 code .
 ```
 
-Helix uses `ocamllsp` and formats `.ml`/`.mli` files with `ocamlformat` on
-save. VS Code uses the OCaml Platform extension with its global sandbox and
-format-on-save enabled. If VS Code was already open outside `nd`, quit it fully
-before launching `code .`. OCaml projects should include a root `.ocamlformat`
-file; Helix also permits formatting standalone files outside a detected
-project.
+Helix formats `.ml`/`.mli` with `ocamlformat` on save. VS Code uses the OCaml
+Platform extension with its global sandbox and format-on-save enabled. If VS
+Code was already open outside `nd`, quit it fully before launching `code .`.
+OCaml projects should include a root `.ocamlformat` file; Helix also permits
+formatting standalone files outside a detected project.
+
+One coupling to watch: `ocaml-lsp` is built against a specific compiler, so the
+`ocamlPackages.ocaml-lsp` here and the `ocamlPackages.ocaml` in a project shell
+must come from the same nixpkgs revision. They do, because this profile exposes
+its pinned source and shells import `<nixpkgs>` through `NIX_PATH` as described
+above — but a project pinning its own nixpkgs must supply a matching
+`ocaml-lsp` itself.
+
+`rust-analyzer` is a language server, not a toolchain: it still needs `cargo`
+on `PATH` from the project's own shell or from rustup.
 
 Add or remove ordinary packages directly in `package.nix`:
 
 ```nix
-{ pkgs, basecampCli }:
+{ pkgs, basecampCli, lemEditor }:
 
 with pkgs; [
   helix
+  lemEditor
   git
   ripgrep
   basecampCli
@@ -124,13 +171,13 @@ Link dotfiles into `$HOME` without rebuilding the package bundle:
 
 ```sh
 cd ~/.config/nix
-stow -d dotfiles -t ~ zsh starship tealdeer helix zellij fish ghostty
+stow -d dotfiles -t ~ zsh starship tealdeer helix zellij fish ghostty vifm emacs
 ```
 
 Preview Stow changes first:
 
 ```sh
-stow -n -v -d dotfiles -t ~ zsh starship tealdeer helix zellij fish ghostty
+stow -n -v -d dotfiles -t ~ zsh starship tealdeer helix zellij fish ghostty vifm emacs
 ```
 
 Unlink a package:
@@ -138,3 +185,90 @@ Unlink a package:
 ```sh
 stow -D -d dotfiles -t ~ helix
 ```
+
+Vifm configuration is managed by `dotfiles/vifm/.config/vifm/vifmrc`.
+It starts with two side-by-side file panes and previews disabled; use `w` or
+`:view` to toggle previews. Runtime state, colors and scripts stay in
+`~/.config/vifm/`.
+
+## Emacs, Hel, and Common Lisp
+
+`emacs.nix` packages vanilla Emacs with pinned Hel, SLY, Tuareg/UTop, and
+Elixir/IEx modes; SBCL is in
+`package.nix`. Stow manages `dotfiles/emacs/.config/emacs/`. The theme is the
+built-in light `modus-operandi`. Packages are supplied by Nix, with automatic
+activation of old user-installed ELPA packages disabled in `early-init.el`.
+
+Launch `emacs -nw example.lisp` in the terminal, or `emacs example.lisp`
+for the graphical editor. Fish and Zsh alias `emacs` to the Nix executable
+to avoid the older `/Applications/Emacs.app`; restart your shell after setup.
+Use `M-x sly` (Alt+x, then type `sly`) to start SBCL.
+In a Lisp source buffer:
+
+- `g d`: visit a definition through SLY; `[ x`: return.
+- `Space c` (normal state), or `C-c C-c`: compile/evaluate the current top-level definition.
+- `C-c C-k`: compile and load the file.
+- `Space r` (normal state), or `C-c C-z`: switch to the REPL.
+- `C-x C-s`: save; `C-x C-c`: exit Emacs.
+
+The REPL starts in insert state. Debugger buffers use standard Emacs commands.
+Other buffers retain Hel defaults, including xref-based `g d` and `g r` where
+a language backend is available. SLY navigation requires a connected Lisp
+with the relevant code loaded.
+
+If `~/.emacs.d` exists, Emacs prefers it over the XDG directory. Keep
+`~/.emacs.d/init.el` and `~/.emacs.d/early-init.el` linked to their counterparts
+in `~/.config/emacs/`. Existing ELPA downloads can remain on disk unused.
+
+In Hel normal state, press `Space` and pause briefly to see the built-in
+which-key menu. `Space w` saves the current buffer, `Space q` quits Emacs
+(with the standard unsaved-buffer prompts), and `Space f` opens the file
+prompt in the current buffer's directory (`Tab` completes file names).
+`Space c` compiles a Lisp definition. `Space r` starts SLY/SBCL when needed,
+then switches to the existing Lisp REPL on subsequent presses in Lisp buffers.
+The commands also support OCaml and Elixir as described below. Space still
+inserts text in insert state.
+
+After a definition jump, `Space j` displays previous jump locations with
+file/buffer names, line numbers, and source text. Select an entry by completing
+its label, or press Enter for the most recent location. `C-g` cancels.
+`[ x` goes back one step; `] x` goes forward again.
+
+`Space Space` opens the Emacs command palette (`M-x`) from Hel normal state.
+
+## OCaml, Elixir, and documentation in Emacs
+
+OCaml (`.ml`, `.mli`) uses Tuareg, UTop, and built-in Eglot with `ocamllsp`.
+Elixir (`.ex`, `.exs`) uses elixir-mode, IEx, and Eglot with `expert --stdio`.
+Eglot starts automatically in source buffers and provides completion,
+diagnostics, `g d` definitions, and `g r` references. The existing `Space j`
+definition history works for these jumps too.
+
+The Space menu follows the current source language:
+
+| Key | Common Lisp | OCaml | Elixir |
+| --- | --- | --- | --- |
+| `Space c` | Compile current definition | Evaluate selected region or current phrase | Evaluate selected region or entire buffer |
+| `Space r` | SLY/SBCL | UTop | IEx (`iex -S mix` inside a Mix project) |
+| `Space k` | Describe symbol | Language-server documentation | Language-server documentation |
+
+Documentation opens in a focused Help buffer. Repeated lookups retain page
+history. `[ x` or `Alt+Left` goes back; `] x` or `Alt+Right` goes forward.
+`Tab` visits links and Enter follows them. Web links open in built-in EWW,
+where the same back/forward keys work. `q` closes the documentation window
+and returns to the previous view. Help and EWW each keep their own history.
+
+Launch Emacs from the project's `nd` shell so Eglot, UTop, and IEx inherit
+the project's compiler, dependencies, and environment. OCaml projects should
+use the compiler from this pinned nixpkgs, matching the globally installed
+`ocamllsp`. Run `dune build` first for complete project information. Plain
+UTop starts without project libraries; for a Dune project, set buffer-local
+`utop-command` to `"dune utop . -- -emacs"` (for example with `M-x
+set-variable`) before starting UTop. `Space c` is interactive evaluation;
+use `M-x compile` for whole-project `dune build` or `mix compile`.
+
+Hel uses its native editing model and cursor shapes: a vertical line in
+normal state and a block in insert state. There are no custom delete/append
+overrides. With a selection, `d` cuts it and `i`/`a` insert at its beginning/end.
+Without a selection, `d` deletes backward, `D` deletes forward, and `i`/`a`
+insert at the same position between characters.

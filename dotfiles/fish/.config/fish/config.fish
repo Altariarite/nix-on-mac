@@ -14,6 +14,9 @@ end
 set -gx NIXPKGS "$HOME/.nix-profile/share/nixpkgs"
 set -gx NIX_PATH "nixpkgs=$NIXPKGS"
 
+# Prefer the Nix Emacs with Hel and SLY over /Applications/Emacs.app.
+alias emacs "$HOME/.nix-profile/bin/emacs"
+
 function jj-sync --description "Fetch and rebase the current jj repo onto main"
     jj git fetch; and jj rebase -d main
 end

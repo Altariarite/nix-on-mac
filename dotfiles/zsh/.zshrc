@@ -4,6 +4,9 @@ export PATH="$HOME/.local/bin:$GEM_HOME/bin:$PATH"
 export NIXPKGS="$HOME/.nix-profile/share/nixpkgs"
 export NIX_PATH="nixpkgs=$NIXPKGS"
 
+# Prefer the Nix Emacs with Hel and SLY over /Applications/Emacs.app.
+alias emacs='"$HOME/.nix-profile/bin/emacs"'
+
 alias jj-sync='jj git fetch && jj rebase -d main'
 alias nix-rebuild='"$HOME/.config/nix/rebuild.sh"'
 alias ze='zellij'
