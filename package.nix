@@ -1,7 +1,6 @@
 {
   pkgs,
   basecampCli,
-  lemEditor,
 }:
 
 with pkgs;
@@ -25,7 +24,6 @@ with pkgs;
   # Terminal/editor tools
   helix
   (import ./emacs.nix { inherit pkgs; })
-  lemEditor
   zellij
   tealdeer
   vifm
@@ -69,7 +67,6 @@ with pkgs;
   ruby-lsp
   rubocop
   ruby_4_0
-  julia
   sbcl
   rlwrap
   babashka

@@ -7,14 +7,12 @@
     basecamp-cli.url = "github:basecamp/basecamp-cli";
     basecamp-cli.inputs.nixpkgs.follows = "nixpkgs";
 
-    lem.url = "github:lem-project/lem";
   };
 
   outputs =
     {
       nixpkgs,
       basecamp-cli,
-      lem,
       ...
     }:
     let
@@ -35,7 +33,6 @@
           import ./package.nix {
             inherit pkgs;
             basecampCli = basecamp-cli.packages.${system}.default;
-            lemEditor = lem.packages.${system}.lem-ncurses;
           }
           ++ [ nixpkgsSource ];
       };

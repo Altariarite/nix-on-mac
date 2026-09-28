@@ -60,15 +60,11 @@ Preview a package build without changing the installed profile:
 nix build --no-link path:.#default
 ```
 
-Update all pinned inputs, including the official Basecamp CLI and Lem:
+Update all pinned inputs, including the official Basecamp CLI:
 
 ```sh
 nix flake update
 ```
-
-Lem's terminal editor comes from its official flake, pinned in `flake.lock`.
-Launch it with `lem` or `lem path/to/file`. Exit with `Ctrl-x Ctrl-c`.
-To update only Lem, run `nix flake update lem`, then `nix profile upgrade nix`.
 
 Codex is installed separately with OpenAI's standalone installer so it can
 track the fast-moving CLI releases independently of the pinned Nix bundle:
@@ -156,11 +152,10 @@ on `PATH` from the project's own shell or from rustup.
 Add or remove ordinary packages directly in `package.nix`:
 
 ```nix
-{ pkgs, basecampCli, lemEditor }:
+{ pkgs, basecampCli }:
 
 with pkgs; [
   helix
-  lemEditor
   git
   ripgrep
   basecampCli
