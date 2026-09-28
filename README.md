@@ -222,10 +222,18 @@ in `~/.config/emacs/`. Existing ELPA downloads can remain on disk unused.
 
 In Hel normal state, press `Space` and pause briefly to see the built-in
 which-key menu. `Space w` saves the current buffer, `Space q` quits Emacs
-(with the standard unsaved-buffer prompts), and `Space f` opens the file
+(with one confirmation that discards unsaved edits), and `Space f` opens the file
 prompt in the current buffer's directory (`Tab` completes file names).
+`Space b` opens Ibuffer: `h/j/k/l` navigate, `Enter` opens the selected buffer,
+`d` closes it (prompting for unsaved changes), and `q` returns to the previous view.
+`Space R` (Shift+r) reloads the saved Emacs config; save edits first with `Space w`.
+`Space p` toggles Parinfer smart mode in the current Lisp source buffer.
+It starts disabled, so you can try indentation-driven parenthesis editing per buffer.
+The Emacs package and its matching Apple Silicon native module are supplied by Nix.
+After installing a new Emacs package, restart Emacs once (config reload alone is insufficient).
 `Space c` compiles a Lisp definition. `Space r` starts SLY/SBCL when needed,
 then switches to the existing Lisp REPL on subsequent presses in Lisp buffers.
+It also opens the Common Lisp REPL from `*scratch*`.
 The commands also support OCaml and Elixir as described below. Space still
 inserts text in insert state.
 

@@ -4,10 +4,13 @@
       inferior-lisp-program "sbcl"
       custom-file (expand-file-name "custom.el" user-emacs-directory))
 
+;; Indent with spaces by default.
+(setq-default indent-tabs-mode nil)
+
 (load-theme 'modus-operandi t)
 
 ;; Face heights are measured in tenths of a point.
-(set-face-attribute 'default nil :height 130)
+(set-face-attribute 'default nil :height 140)
 
 
 ;; Use Hel's native cursor shapes and editing commands.
@@ -16,6 +19,22 @@
 
 (require 'sly)
 (require 'sly-mrepl)
+
+;; Opt in per source buffer while trying Parinfer; the native module comes from Nix.
+(setq parinfer-rust-library (locate-library "parinfer-rust-darwin.so")
+      parinfer-rust-auto-download nil
+      parinfer-rust-preferred-mode "smart")
+(require 'parinfer-rust-mode)
+
+(defun altaria-toggle-parinfer ()
+  "Toggle Parinfer in a Lisp source buffer."
+  (interactive)
+  (unless (derived-mode-p 'lisp-mode 'emacs-lisp-mode 'lisp-interaction-mode 'scheme-mode)
+    (user-error "Open a Lisp source buffer to try Parinfer"))
+  (unless parinfer-rust-mode
+    (setq-local indent-tabs-mode nil))
+  (parinfer-rust-mode 'toggle)
+  (message "Parinfer %s" (if parinfer-rust-mode "enabled" "disabled")))
 
 (defun altaria-lisp-repl ()
   "Start SLY if necessary, otherwise switch to its REPL."
@@ -110,7 +129,9 @@
   (cond ((derived-mode-p 'tuareg-mode 'utop-mode) (utop))
         ((derived-mode-p 'elixir-mode) (altaria-elixir-repl))
         ((derived-mode-p 'inf-elixir-mode) (goto-char (point-max)))
-        ((derived-mode-p 'lisp-mode 'sly-mrepl-mode) (altaria-lisp-repl))
+        ((or (equal (buffer-name) "*scratch*")
+             (derived-mode-p 'lisp-mode 'sly-mrepl-mode))
+         (altaria-lisp-repl))
         (t (user-error "Open a Lisp, OCaml, or Elixir source buffer first"))))
 
 (defun altaria-evaluate ()
@@ -171,6 +192,34 @@
   "] x" #'eww-forward-url "M-<right>" #'eww-forward-url
   "RET" #'eww-follow-link "TAB" #'shr-next-link "q" #'quit-window)
 
+(defun altaria-quit ()
+  "Quit with one confirmation, discarding any unsaved edits."
+  (interactive)
+  (when (yes-or-no-p "Quit Emacs? Unsaved edits will be discarded. ")
+    (kill-emacs)))
+
+;; A navigable buffer list, using Emacs's built-in Ibuffer.
+(require 'ibuffer)
+(hel-set-initial-state 'ibuffer-mode 'normal)
+
+(defun altaria-delete-buffer ()
+  "Close the buffer on the current Ibuffer row and refresh the list."
+  (interactive)
+  (when (kill-buffer (ibuffer-current-buffer t))
+    (ibuffer-update nil)))
+
+(hel-keymap-set ibuffer-mode-map :state '(normal emacs)
+  "h" #'backward-char "j" #'ibuffer-forward-line
+  "k" #'ibuffer-backward-line "l" #'forward-char
+  "d" #'altaria-delete-buffer "RET" #'ibuffer-visit-buffer
+  "q" #'quit-window)
+
+(defun altaria-reload-config ()
+  "Reload the saved Emacs configuration."
+  (interactive)
+  (load-file (expand-file-name "~/.config/emacs/init.el"))
+  (message "Emacs configuration reloaded"))
+
 ;; Built-in which-key displays the Space menu after a short pause.
 (require 'which-key)
 (setq which-key-idle-delay 0.2)
@@ -179,15 +228,21 @@
 (defvar altaria-leader-map (make-sparse-keymap)
   "Space leader commands for Hel normal state.")
 (keymap-set altaria-leader-map "q"
-            '(menu-item "Quit Emacs" save-buffers-kill-terminal))
+            '(menu-item "Quit Emacs" altaria-quit))
 (keymap-set altaria-leader-map "w"
             '(menu-item "Save file" save-buffer))
+(keymap-set altaria-leader-map "b"
+            '(menu-item "Buffer list" ibuffer))
 (keymap-set altaria-leader-map "f"
             '(menu-item "Find file in current directory" find-file))
 (keymap-set altaria-leader-map "c"
             '(menu-item "Evaluate code" altaria-evaluate))
 (keymap-set altaria-leader-map "r"
             '(menu-item "Language REPL" altaria-repl))
+(keymap-set altaria-leader-map "p"
+            '(menu-item "Toggle Parinfer" altaria-toggle-parinfer))
+(keymap-set altaria-leader-map "R"
+            '(menu-item "Reload config" altaria-reload-config))
 (keymap-set altaria-leader-map "j"
             '(menu-item "Jump history" altaria-jump-list))
 (keymap-set altaria-leader-map "SPC"
