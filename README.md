@@ -189,13 +189,15 @@ It starts with two side-by-side file panes and previews disabled; use `w` or
 ## Emacs, Hel, and Common Lisp
 
 `emacs.nix` packages vanilla Emacs with pinned Hel, SLY, Tuareg/UTop, and
-Elixir/IEx modes; SBCL is in
+Elixir/IEx modes, and nix-mode for `.nix` files; SBCL is in
 `package.nix`. Stow manages `dotfiles/emacs/.config/emacs/`. The theme is the
 built-in light `modus-operandi`. Packages are supplied by Nix, with automatic
 activation of old user-installed ELPA packages disabled in `early-init.el`.
 
-Launch `emacs -nw example.lisp` in the terminal, or `emacs example.lisp`
-for the graphical editor. Fish and Zsh alias `emacs` to the Nix executable
+Launch `e example.lisp` (short for `emacs -nw`) in the terminal, or
+`emacs example.lisp` for the graphical editor. Like `hx .`, `e .` opens the
+file picker for that directory over `*scratch*`. The mouse (clicks, selection, wheel) works
+in terminal Emacs via `xterm-mouse-mode`. Fish and Zsh alias `emacs` to the Nix executable
 to avoid the older `/Applications/Emacs.app`; restart your shell after setup.
 Use `M-x sly` (Alt+x, then type `sly`) to start SBCL.
 In a Lisp source buffer:
@@ -206,7 +208,7 @@ In a Lisp source buffer:
 - `Space r` (normal state), or `C-c C-z`: switch to the REPL.
 - `C-x C-s`: save; `C-x C-c`: exit Emacs.
 
-The REPL starts in insert state. Debugger buffers use standard Emacs commands.
+The REPL starts in insert state; Up/Down recall earlier input (SLY, UTop, IEx). Debugger buffers use standard Emacs commands.
 Other buffers retain Hel defaults, including xref-based `g d` and `g r` where
 a language backend is available. SLY navigation requires a connected Lisp
 with the relevant code loaded.
@@ -217,8 +219,11 @@ in `~/.config/emacs/`. Existing ELPA downloads can remain on disk unused.
 
 In Hel normal state, press `Space` and pause briefly to see the built-in
 which-key menu. `Space w` saves the current buffer, `Space q` quits Emacs
-(with one confirmation that discards unsaved edits), and `Space f` opens the file
-prompt in the current buffer's directory (`Tab` completes file names).
+(like Vim's `:q`, it refuses while any file has unsaved edits), and `Space f` opens a
+Helix-style fuzzy picker over the project's files (Git-aware; the current
+directory outside a project). `Space F` opens the plain file prompt in the
+current buffer's directory. Minibuffer prompts list matches vertically
+(`fido-vertical-mode`): type any part of a name, `C-n`/`C-p` to move, `Enter`.
 `Space b` opens Ibuffer: `h/j/k/l` navigate, `Enter` opens the selected buffer,
 `d` closes it (prompting for unsaved changes), and `q` returns to the previous view.
 `Space R` (Shift+r) reloads the saved Emacs config; save edits first with `Space w`.
@@ -243,6 +248,7 @@ its label, or press Enter for the most recent location. `C-g` cancels.
 
 OCaml (`.ml`, `.mli`) uses Tuareg, UTop, and built-in Eglot with `ocamllsp`.
 Elixir (`.ex`, `.exs`) uses elixir-mode, IEx, and Eglot with `expert --stdio`.
+Nix (`.nix`) uses nix-mode and Eglot with `nil`, so `Space k` shows Nix docs.
 Eglot starts automatically in source buffers and provides completion,
 diagnostics, `g d` definitions, and `g r` references. The existing `Space j`
 definition history works for these jumps too.
@@ -255,7 +261,14 @@ The Space menu follows the current source language:
 | `Space r` | SLY/SBCL | UTop | IEx (`iex -S mix` inside a Mix project) |
 | `Space k` | Describe symbol | Language-server documentation | Language-server documentation |
 
-Documentation opens in a focused Help buffer. Repeated lookups retain page
+Language-server warnings and errors (the underlined text) show their message
+when the cursor is on them; `] d` / `[ d` jump to the next/previous one. Emacs 31
+hides diagnostics from files outside `trusted-content`; `init.el` exempts
+Eglot's checker, which only displays what the language server reports.
+
+Documentation opens in a focused Help buffer to the right of the current
+window, in the terminal as in the graphical frame. Repeated lookups reuse
+that window and retain page
 history. `[ x` or `Alt+Left` goes back; `] x` or `Alt+Right` goes forward.
 `Tab` visits links and Enter follows them. Web links open in built-in EWW,
 where the same back/forward keys work. `q` closes the documentation window

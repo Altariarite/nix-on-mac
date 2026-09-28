@@ -6,6 +6,8 @@ export NIX_PATH="nixpkgs=$NIXPKGS"
 
 # Prefer the Nix Emacs with Hel and SLY over /Applications/Emacs.app.
 alias emacs='"$HOME/.nix-profile/bin/emacs"'
+# Terminal Emacs; `e .` opens the file picker like `hx .`.
+alias e='"$HOME/.nix-profile/bin/emacs" -nw'
 
 alias jj-sync='jj git fetch && jj rebase -d main'
 alias nix-rebuild='"$HOME/.config/nix/rebuild.sh"'

@@ -13,6 +13,13 @@
 (set-face-attribute 'default nil :height 140)
 
 
+;; Clicks, selection, and the scroll wheel also work in terminal Emacs.
+(xterm-mouse-mode 1)
+
+;; Minibuffer prompts list candidates vertically with fuzzy matching,
+;; like Helix's pickers: type part of a name, then C-n/C-p and Enter.
+(fido-vertical-mode 1)
+
 ;; Use Hel's native cursor shapes and editing commands.
 (require 'hel)
 (hel-mode 1)
@@ -91,6 +98,9 @@
       (dotimes (_ (cdr (assoc choice choices)))
         (xref-go-back)))))
 
+;; Nix files get syntax highlighting and indentation.
+(require 'nix-mode)
+
 ;; OCaml and Elixir use the language servers already managed by Nix.
 (require 'eglot)
 (require 'tuareg)
@@ -106,9 +116,23 @@
 (add-hook 'tuareg-mode-hook #'eglot-ensure)
 (add-hook 'tuareg-mode-hook #'utop-minor-mode)
 (add-hook 'elixir-mode-hook #'eglot-ensure)
+;; Nix uses nil, the language server Helix also uses.
+(add-hook 'nix-mode-hook #'eglot-ensure)
 (hel-set-initial-state 'utop-mode 'insert)
 (hel-set-initial-state 'inf-elixir-mode 'insert)
 (setq inf-elixir-prefer-umbrella nil)
+
+;; Up/Down recall earlier input at every REPL prompt, like a terminal.
+;; They apply in insert state; normal state keeps them for moving the cursor.
+(hel-keymap-set sly-mrepl-mode-map :state 'insert
+  "<up>" #'sly-mrepl-previous-input-or-button
+  "<down>" #'sly-mrepl-next-input-or-button)
+(hel-keymap-set utop-mode-map :state 'insert
+  "<up>" #'utop-history-goto-prev
+  "<down>" #'utop-history-goto-next)
+(hel-keymap-set inf-elixir-mode-map :state 'insert
+  "<up>" #'comint-previous-input
+  "<down>" #'comint-next-input)
 
 (defun altaria-elixir-repl ()
   "Start or reuse IEx for the nearest Mix project or this source buffer."
@@ -179,6 +203,26 @@
     (call-interactively #'describe-symbol))
    (t (user-error "Open a source buffer with SLY or Eglot connected"))))
 
+;; Diagnostics (the underlined warnings/errors) show their message when the
+;; cursor is on them; ] d / [ d jump between them, as in Helix.
+(require 'flymake)
+;; Emacs 31 hides diagnostics in files outside `trusted-content'. Eglot's
+;; backend only displays what the already-running language server reports,
+;; so it is safe everywhere; code-evaluating backends stay gated.
+(put 'eglot-flymake-backend 'flymake-always-safe t)
+(hel-keymap-global-set :state 'normal
+  "] d" #'flymake-goto-next-error
+  "[ d" #'flymake-goto-prev-error)
+
+;; Documentation opens beside the current window (right half), as it does
+;; in a wide graphical frame, even when the terminal is too narrow for
+;; Emacs to split side by side on its own.
+(add-to-list 'display-buffer-alist
+             '("\\`\\*Help\\*\\'"
+               (display-buffer-reuse-window display-buffer-in-direction)
+               (direction . right)
+               (window-width . 0.5)))
+
 ;; Browser-like keys work in both Help pages and the built-in web browser.
 ;; Space remains available for the leader menu in these read-only buffers.
 (dolist (mode '(help-mode eww-mode))
@@ -193,10 +237,16 @@
   "RET" #'eww-follow-link "TAB" #'shr-next-link "q" #'quit-window)
 
 (defun altaria-quit ()
-  "Quit with one confirmation, discarding any unsaved edits."
+  "Quit like Vim's :q: refuse while any file has unsaved edits."
   (interactive)
-  (when (yes-or-no-p "Quit Emacs? Unsaved edits will be discarded. ")
-    (kill-emacs)))
+  (let ((unsaved (seq-filter (lambda (buffer)
+                               (and (buffer-file-name buffer)
+                                    (buffer-modified-p buffer)))
+                             (buffer-list))))
+    (if unsaved
+        (user-error "No write since last change: %s (save with Space w)"
+                    (mapconcat #'buffer-name unsaved ", "))
+      (kill-emacs))))
 
 ;; A navigable buffer list, using Emacs's built-in Ibuffer.
 (require 'ibuffer)
@@ -220,6 +270,30 @@
   (load-file (expand-file-name "~/.config/emacs/init.el"))
   (message "Emacs configuration reloaded"))
 
+;; Helix-style file picker: every file below the project root (Git-aware,
+;; so ignored files stay hidden), or below the current directory elsewhere.
+(require 'project)
+(defun altaria-file-picker ()
+  "Pick a file in the current project, like Helix's Space f."
+  (interactive)
+  (let ((project (or (project-current)
+                     (cons 'transient default-directory))))
+    (project-find-file-in nil (list (project-root project)) project)))
+
+;; Like `hx .': a directory on the command line opens the file picker
+;; over *scratch* instead of a directory listing, so C-g leaves *scratch*.
+(defun altaria-pick-startup-directory ()
+  "Open the file picker when Emacs was started on a directory."
+  (let ((listing (window-buffer (selected-window))))
+    (when (and (not noninteractive)
+               (with-current-buffer listing (derived-mode-p 'dired-mode))
+               (cdr command-line-args))
+      (let ((default-directory (buffer-local-value 'default-directory listing)))
+        (switch-to-buffer (get-scratch-buffer-create))
+        (kill-buffer listing)
+        (altaria-file-picker)))))
+(add-hook 'emacs-startup-hook #'altaria-pick-startup-directory)
+
 ;; Built-in which-key displays the Space menu after a short pause.
 (require 'which-key)
 (setq which-key-idle-delay 0.2)
@@ -234,6 +308,8 @@
 (keymap-set altaria-leader-map "b"
             '(menu-item "Buffer list" ibuffer))
 (keymap-set altaria-leader-map "f"
+            '(menu-item "File picker" altaria-file-picker))
+(keymap-set altaria-leader-map "F"
             '(menu-item "Find file in current directory" find-file))
 (keymap-set altaria-leader-map "c"
             '(menu-item "Evaluate code" altaria-evaluate))

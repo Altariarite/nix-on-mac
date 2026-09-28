@@ -37,4 +37,5 @@ epkgs.emacsWithPackages (epkgs: [
   epkgs.utop
   epkgs.elixir-mode
   epkgs.inf-elixir
+  epkgs.nix-mode
 ])
