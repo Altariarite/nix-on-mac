@@ -24,6 +24,36 @@
 (require 'hel)
 (hel-mode 1)
 
+;; Terminal Emacs can't draw Hel's cursor shapes itself (a bar between
+;; characters in normal state, a block while typing), so tell the terminal
+;; with the standard cursor-shape escape codes whenever the shape changes.
+(defvar altaria--terminal-cursor nil
+  "Cursor-shape escape sequence last sent to the terminal.")
+
+(defun altaria-terminal-cursor-update ()
+  "Match the terminal cursor to `cursor-type' in the selected window."
+  (unless (or noninteractive (display-graphic-p))
+    (let* ((type (buffer-local-value 'cursor-type (window-buffer)))
+           (sequence (pcase (if (consp type) (car type) type)
+                       ('bar "\e[6 q")
+                       ('hbar "\e[4 q")
+                       (_ "\e[2 q"))))
+      (unless (equal sequence altaria--terminal-cursor)
+        (send-string-to-terminal sequence)
+        (setq altaria--terminal-cursor sequence)))))
+
+(defun altaria-terminal-cursor-reset ()
+  "Give the terminal back its own cursor shape."
+  (unless (or noninteractive (display-graphic-p))
+    (send-string-to-terminal "\e[0 q")
+    (setq altaria--terminal-cursor nil)))
+
+(add-hook 'post-command-hook #'altaria-terminal-cursor-update)
+(add-hook 'emacs-startup-hook #'altaria-terminal-cursor-update)
+(add-hook 'suspend-resume-hook #'altaria-terminal-cursor-update)
+(add-hook 'suspend-hook #'altaria-terminal-cursor-reset)
+(add-hook 'kill-emacs-hook #'altaria-terminal-cursor-reset)
+
 (require 'sly)
 (require 'sly-mrepl)
 
@@ -58,6 +88,9 @@
 ;; REPL input and debugger commands use their standard Emacs bindings.
 (hel-set-initial-state 'sly-mrepl-mode 'insert)
 (hel-set-initial-state 'sly-db-mode 'emacs)
+;; j/k step through backtrace frames, as in Emacs's own debugger under Hel.
+(hel-keymap-set sly-db-mode-map :state 'emacs
+  "j" #'sly-db-down "k" #'sly-db-up)
 
 
 (require 'xref)
@@ -235,6 +268,42 @@
   "[ x" #'eww-back-url "M-<left>" #'eww-back-url
   "] x" #'eww-forward-url "M-<right>" #'eww-forward-url
   "RET" #'eww-follow-link "TAB" #'shr-next-link "q" #'quit-window)
+
+;; Info manuals: Hel already gives them j/k; h/l move the cursor too, and
+;; history moves to the same back/forward keys as Help and EWW.  Info's own
+;; [ and ] (previous/next node in reading order) move to [ n and ] n.
+(require 'info)
+(hel-keymap-set Info-mode-map
+  "h" #'left-char "l" #'right-char
+  "[" nil "]" nil
+  "[ n" #'Info-backward-node "] n" #'Info-forward-node
+  "[ x" #'Info-history-back "M-<left>" #'Info-history-back
+  "] x" #'Info-history-forward "M-<right>" #'Info-history-forward)
+
+;; Dired moves like other read-only buffers and like vifm: j/k move,
+;; h goes to the parent directory, l opens.  The dired commands these
+;; keys replace move to J (go to file) and K (hide lines); g r refreshes.
+(require 'dired)
+
+(defun altaria-dired-first-file ()
+  "Move to the first entry in the listing."
+  (interactive)
+  (goto-char (point-min))
+  (dired-next-line 1))
+
+(defun altaria-dired-last-file ()
+  "Move to the last entry in the listing."
+  (interactive)
+  (goto-char (point-max))
+  (dired-previous-line 1))
+
+(hel-keymap-set dired-mode-map
+  "j" #'dired-next-line "k" #'dired-previous-line
+  "h" #'dired-up-directory "l" #'dired-find-file
+  "J" #'dired-goto-file "K" #'dired-do-kill-lines
+  "g" nil
+  "g g" #'altaria-dired-first-file "G" #'altaria-dired-last-file
+  "g r" #'revert-buffer)
 
 (defun altaria-quit ()
   "Quit like Vim's :q: refuse while any file has unsaved edits."

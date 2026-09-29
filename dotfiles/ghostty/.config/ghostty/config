@@ -9,3 +9,6 @@ keybind = super+l=goto_split:right
 keybind = super+h=goto_split:left
 keybind = super+r=reload_config
 macos-option-as-alt = true
+
+# Thicker bar cursor, so the bar Hel/Helix use in the terminal is easy to see.
+adjust-cursor-thickness = 200%

@@ -197,7 +197,11 @@ activation of old user-installed ELPA packages disabled in `early-init.el`.
 Launch `e example.lisp` (short for `emacs -nw`) in the terminal, or
 `emacs example.lisp` for the graphical editor. Like `hx .`, `e .` opens the
 file picker for that directory over `*scratch*`. The mouse (clicks, selection, wheel) works
-in terminal Emacs via `xterm-mouse-mode`. Fish and Zsh alias `emacs` to the Nix executable
+in terminal Emacs via `xterm-mouse-mode`. The terminal cursor follows Hel's
+state as in the graphical editor: a bar between characters in normal state
+(Emacs's cursor always sits between characters, so after selecting a word the
+bar sits right after it), a block in insert state, and an underline in Emacs
+state. Fish and Zsh alias `emacs` to the Nix executable
 to avoid the older `/Applications/Emacs.app`; restart your shell after setup.
 Use `M-x sly` (Alt+x, then type `sly`) to start SBCL.
 In a Lisp source buffer:
@@ -208,7 +212,8 @@ In a Lisp source buffer:
 - `Space r` (normal state), or `C-c C-z`: switch to the REPL.
 - `C-x C-s`: save; `C-x C-c`: exit Emacs.
 
-The REPL starts in insert state; Up/Down recall earlier input (SLY, UTop, IEx). Debugger buffers use standard Emacs commands.
+The REPL starts in insert state; Up/Down recall earlier input (SLY, UTop, IEx). Debugger buffers use standard Emacs commands,
+plus `j`/`k` to move down/up the backtrace frames.
 Other buffers retain Hel defaults, including xref-based `g d` and `g r` where
 a language backend is available. SLY navigation requires a connected Lisp
 with the relevant code loaded.
@@ -226,6 +231,12 @@ current buffer's directory. Minibuffer prompts list matches vertically
 (`fido-vertical-mode`): type any part of a name, `C-n`/`C-p` to move, `Enter`.
 `Space b` opens Ibuffer: `h/j/k/l` navigate, `Enter` opens the selected buffer,
 `d` closes it (prompting for unsaved changes), and `q` returns to the previous view.
+Dired (`C-x d`) moves like other read-only buffers and like vifm: `j`/`k` move,
+`h` goes to the parent directory, `l` opens, `g g`/`G` jump to the first/last
+entry, and `g r` refreshes. Dired's own `j` (go to file) and `k` (hide lines)
+move to `J` and `K`. Info manuals use `h/j/k/l` to move, `[ x`/`] x` for
+back/forward history (as in Help and EWW), and `[ n`/`] n` for the
+previous/next node in reading order.
 `Space R` (Shift+r) reloads the saved Emacs config; save edits first with `Space w`.
 `Space p` toggles Parinfer smart mode in the current Lisp source buffer.
 It starts disabled, so you can try indentation-driven parenthesis editing per buffer.
