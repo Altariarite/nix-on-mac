@@ -91,10 +91,40 @@
       (call-interactively #'sly-mrepl)
     (sly)))
 
-;; Keep Lisp navigation connected to the running Lisp image.
+;; Cross-references from the running Lisp, for the symbol under the cursor
+;; (SLY's own commands always prompt; these only ask when there's none).
+(defun altaria-sly-xref (type prompt)
+  "Show SLY cross-references of TYPE for the symbol at point."
+  (sly-xref type (or (sly-symbol-at-point) (sly-read-symbol-name prompt t))))
+
+(defun altaria-sly-who-calls ()
+  "List the functions that call the function at point."
+  (interactive)
+  (altaria-sly-xref :calls "Who calls: "))
+
+(defun altaria-sly-calls-who ()
+  "List the functions that the function at point calls."
+  (interactive)
+  ;; :callees works on SBCL; SLY's :calls-who isn't implemented there.
+  (altaria-sly-xref :callees "Calls who: "))
+
+(defun altaria-sly-who-references ()
+  "List the code that reads the global variable at point."
+  (interactive)
+  (altaria-sly-xref :references "Who references: "))
+
+;; Keep Lisp navigation connected to the running Lisp image.  g c replaces
+;; Hel's comment toggle in Lisp buffers; M-; still comments.
 (hel-keymap-set sly-mode-map :state 'normal
   "g d" #'sly-edit-definition
+  "g r" #'altaria-sly-who-references
+  "g c" #'altaria-sly-who-calls
+  "g C" #'altaria-sly-calls-who
   "[ x" #'sly-pop-find-definition-stack)
+
+;; The cross-reference list: Enter jumps to an entry, q closes the list.
+(hel-keymap-set sly-xref-mode-map :state 'normal
+  "RET" #'sly-xref-goto "q" #'quit-window)
 
 ;; REPL input and debugger commands use their standard Emacs bindings.
 (hel-set-initial-state 'sly-mrepl-mode 'insert)
@@ -159,6 +189,23 @@
 (add-to-list 'eglot-server-programs '(elixir-mode . ("expert" "--stdio")))
 (add-hook 'tuareg-mode-hook #'eglot-ensure)
 (add-hook 'tuareg-mode-hook #'utop-minor-mode)
+;; Helix's goto keys that ocamllsp supports.  g r (references, built into
+;; Hel) also finds a function's callers; ocamllsp has no call hierarchy.
+(defun altaria-goto-type-definition ()
+  "Jump to the definition of the type at point (list it if there are several)."
+  (interactive)
+  (let ((xref-show-xrefs-function #'xref-show-definitions-buffer))
+    (call-interactively #'eglot-find-typeDefinition)))
+
+(defun altaria-goto-declaration ()
+  "Jump to the declaration at point (list it if there are several)."
+  (interactive)
+  (let ((xref-show-xrefs-function #'xref-show-definitions-buffer))
+    (call-interactively #'eglot-find-declaration)))
+
+(hel-keymap-set tuareg-mode-map :state 'normal
+  "g y" #'altaria-goto-type-definition
+  "g D" #'altaria-goto-declaration)
 
 ;; Format OCaml on save with ocamlformat.  A project's .ocamlformat still
 ;; applies; the flag also formats single files outside any project.  On a

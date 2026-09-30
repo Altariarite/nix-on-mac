@@ -207,6 +207,10 @@ Use `M-x sly` (Alt+x, then type `sly`) to start SBCL.
 In a Lisp source buffer:
 
 - `g d`: visit a definition through SLY; `[ x`: return.
+- `g c`: who calls the function at point; `g C`: what it calls; `g r`: who
+  references the global variable at point. Results open in a list: `j`/`k`
+  move, `Enter` jumps, `q` closes. In Lisp buffers `g c` replaces Hel's comment
+  toggle; `M-;` still comments.
 - `Space c` (normal state), or `C-c C-c`: compile/evaluate the current top-level definition.
 - `C-c C-k`: compile and load the file.
 - `Space r` (normal state), or `C-c C-z`: switch to the REPL.
@@ -268,6 +272,9 @@ its label, or press Enter for the most recent location. `C-g` cancels.
 ## OCaml, Elixir, and documentation in Emacs
 
 OCaml (`.ml`, `.mli`) uses Tuareg, UTop, and built-in Eglot with `ocamllsp`.
+As in Helix, `g d` goes to a definition, `g y` to the definition of its type,
+`g D` to its declaration, and `g r` lists references, which include a
+function's callers (`ocamllsp` has no separate "who calls").
 Saving formats `.ml`/`.mli` with `ocamlformat`, using the project's
 `.ocamlformat` when there is one and the default style for single files; a file
 with a syntax error saves unformatted and the error is shown.
