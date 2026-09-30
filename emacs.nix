@@ -38,4 +38,5 @@ epkgs.emacsWithPackages (epkgs: [
   epkgs.elixir-mode
   epkgs.inf-elixir
   epkgs.nix-mode
+  epkgs.kkp
 ])

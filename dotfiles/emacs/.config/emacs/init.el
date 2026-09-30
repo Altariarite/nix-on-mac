@@ -401,6 +401,49 @@
         (altaria-file-picker)))))
 (add-hook 'emacs-startup-hook #'altaria-pick-startup-directory)
 
+;; The macOS clipboard, as in Helix: Space y copies the selection, Space p/P
+;; paste after/before it.  pbcopy/pbpaste work in terminal Emacs too, where
+;; Emacs has no clipboard access of its own.
+(defun altaria-clipboard-copy ()
+  "Copy the selection to the system clipboard."
+  (interactive)
+  (unless (use-region-p)
+    (user-error "Select some text first"))
+  (let ((text (filter-buffer-substring (region-beginning) (region-end)))
+        (coding-system-for-write 'utf-8))
+    (with-temp-buffer
+      (insert text)
+      (call-process-region nil nil "pbcopy"))
+    (message "Copied to clipboard")))
+
+(defun altaria-clipboard-paste (paste-command)
+  "Put the system clipboard in the kill ring and run Hel's PASTE-COMMAND."
+  (let ((text (with-temp-buffer
+                (let ((coding-system-for-read 'utf-8))
+                  (call-process "pbpaste" nil t))
+                (buffer-string))))
+    (when (string-empty-p text)
+      (user-error "The clipboard is empty"))
+    (kill-new text)
+    (call-interactively paste-command)))
+
+(defun altaria-clipboard-paste-after ()
+  "Paste the system clipboard after the selection."
+  (interactive "*")
+  (altaria-clipboard-paste #'hel-paste-after))
+
+(defun altaria-clipboard-paste-before ()
+  "Paste the system clipboard before the selection."
+  (interactive "*")
+  (altaria-clipboard-paste #'hel-paste-before))
+
+;; Cmd+C in terminal Emacs.  The kitty keyboard protocol lets the terminal
+;; report Cmd (super); Ghostty passes Cmd+C through when it has no selection
+;; of its own (see its config), so it arrives here as s-c.
+(require 'kkp)
+(global-kkp-mode 1)
+(keymap-global-set "s-c" #'altaria-clipboard-copy)
+
 ;; Built-in which-key displays the Space menu after a short pause.
 (require 'which-key)
 (setq which-key-idle-delay 0.2)
@@ -422,7 +465,13 @@
             '(menu-item "Evaluate code" altaria-evaluate))
 (keymap-set altaria-leader-map "r"
             '(menu-item "Language REPL" altaria-repl))
+(keymap-set altaria-leader-map "y"
+            '(menu-item "Copy to clipboard" altaria-clipboard-copy))
 (keymap-set altaria-leader-map "p"
+            '(menu-item "Paste clipboard after" altaria-clipboard-paste-after))
+(keymap-set altaria-leader-map "P"
+            '(menu-item "Paste clipboard before" altaria-clipboard-paste-before))
+(keymap-set altaria-leader-map "t"
             '(menu-item "Toggle Parinfer" altaria-toggle-parinfer))
 (keymap-set altaria-leader-map "R"
             '(menu-item "Reload config" altaria-reload-config))

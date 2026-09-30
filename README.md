@@ -241,7 +241,14 @@ move to `J` and `K`. Info manuals use `h/j/k/l` to move, `[ x`/`] x` for
 back/forward history (as in Help and EWW), and `[ n`/`] n` for the
 previous/next node in reading order.
 `Space R` (Shift+r) reloads the saved Emacs config; save edits first with `Space w`.
-`Space p` toggles Parinfer smart mode in the current Lisp source buffer.
+`Space y` copies the selection to the macOS clipboard, and `Space p`/`Space P`
+paste the clipboard after/before the selection, as in Helix. They use
+`pbcopy`/`pbpaste`, so they also work in terminal Emacs; plain `y`/`p` keep
+using Emacs's own kill ring. `Cmd+C` copies the selection too, and `Cmd+V`
+pastes: Emacs turns on the kitty keyboard protocol (`kkp`), and Ghostty passes
+`Cmd+C` through to Emacs whenever Ghostty itself has no selection (a
+Shift+drag selection is still copied by Ghostty).
+`Space t` toggles Parinfer smart mode in the current Lisp source buffer.
 It starts disabled, so you can try indentation-driven parenthesis editing per buffer.
 The Emacs package and its matching Apple Silicon native module are supplied by Nix.
 After installing a new Emacs package, restart Emacs once (config reload alone is insufficient).
