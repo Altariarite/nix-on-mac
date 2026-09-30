@@ -73,6 +73,17 @@
   (parinfer-rust-mode 'toggle)
   (message "Parinfer %s" (if parinfer-rust-mode "enabled" "disabled")))
 
+;; Format Common Lisp on save the way Lispers do: re-indent with SLY's
+;; Common Lisp rules and drop trailing whitespace.
+(defun altaria-format-lisp ()
+  "Re-indent the whole buffer and delete trailing whitespace."
+  (let ((inhibit-message t))
+    (save-excursion (indent-region (point-min) (point-max))))
+  (delete-trailing-whitespace))
+
+(add-hook 'lisp-mode-hook
+          (lambda () (add-hook 'before-save-hook #'altaria-format-lisp nil t)))
+
 (defun altaria-lisp-repl ()
   "Start SLY if necessary, otherwise switch to its REPL."
   (interactive)
@@ -148,6 +159,33 @@
 (add-to-list 'eglot-server-programs '(elixir-mode . ("expert" "--stdio")))
 (add-hook 'tuareg-mode-hook #'eglot-ensure)
 (add-hook 'tuareg-mode-hook #'utop-minor-mode)
+
+;; Format OCaml on save with ocamlformat.  A project's .ocamlformat still
+;; applies; the flag also formats single files outside any project.  On a
+;; syntax error the file saves unformatted and the error is shown.
+(defun altaria-format-ocaml ()
+  "Replace the buffer with ocamlformat's output, keeping point in place."
+  (when (and buffer-file-name (string-match-p "\\.mli?\\'" buffer-file-name))
+    (let ((output (generate-new-buffer " *ocamlformat*"))
+          (errors (make-temp-file "ocamlformat")))
+      (unwind-protect
+          (if (zerop (call-process-region nil nil "ocamlformat" nil (list output errors) nil
+                                          "-" "--name" buffer-file-name
+                                          "--enable-outside-detected-project"))
+              (replace-buffer-contents output 1)
+            (with-temp-buffer
+              (insert-file-contents errors)
+              (let ((line (and (re-search-forward "line \\([0-9]+\\)" nil t)
+                               (match-string 1)))
+                    (error (car (last (split-string (buffer-string) "\n" t)))))
+                (message "ocamlformat skipped (saved unformatted): %s%s"
+                         (if line (format "line %s: " line) "")
+                         (string-remove-prefix "Error: " error)))))
+        (kill-buffer output)
+        (delete-file errors)))))
+
+(add-hook 'tuareg-mode-hook
+          (lambda () (add-hook 'before-save-hook #'altaria-format-ocaml nil t)))
 (add-hook 'elixir-mode-hook #'eglot-ensure)
 ;; Nix uses nil, the language server Helix also uses.
 (add-hook 'nix-mode-hook #'eglot-ensure)

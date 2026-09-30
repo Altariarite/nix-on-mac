@@ -211,6 +211,9 @@ In a Lisp source buffer:
 - `C-c C-k`: compile and load the file.
 - `Space r` (normal state), or `C-c C-z`: switch to the REPL.
 - `C-x C-s`: save; `C-x C-c`: exit Emacs.
+- Saving a Lisp file re-indents it with SLY's Common Lisp rules and removes
+  trailing whitespace. With Parinfer on, it asks once before fixing a badly
+  indented file.
 
 The REPL starts in insert state; Up/Down recall earlier input (SLY, UTop, IEx). Debugger buffers use standard Emacs commands,
 plus `j`/`k` to move down/up the backtrace frames.
@@ -258,6 +261,9 @@ its label, or press Enter for the most recent location. `C-g` cancels.
 ## OCaml, Elixir, and documentation in Emacs
 
 OCaml (`.ml`, `.mli`) uses Tuareg, UTop, and built-in Eglot with `ocamllsp`.
+Saving formats `.ml`/`.mli` with `ocamlformat`, using the project's
+`.ocamlformat` when there is one and the default style for single files; a file
+with a syntax error saves unformatted and the error is shown.
 Elixir (`.ex`, `.exs`) uses elixir-mode, IEx, and Eglot with `expert --stdio`.
 Nix (`.nix`) uses nix-mode and Eglot with `nil`, so `Space k` shows Nix docs.
 Eglot starts automatically in source buffers and provides completion,
