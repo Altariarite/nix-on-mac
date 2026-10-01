@@ -312,6 +312,11 @@ Nix (`.nix`) uses nix-mode and Eglot with `nil`, so `Space k` shows Nix docs.
 Eglot starts automatically in source buffers and provides completion,
 diagnostics, `g d` definitions, and `g r` references. The existing `Space j`
 definition history works for these jumps too.
+`Space a` offers the language server's code actions (quick fixes, refactors)
+at the cursor, as in Helix.
+
+As in Helix, `g a` returns to the previous buffer, and `g n` / `g p` go to the
+next/previous buffer.
 
 The Space menu follows the current source language:
 

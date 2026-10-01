@@ -385,6 +385,12 @@
 ;; backend only displays what the already-running language server reports,
 ;; so it is safe everywhere; code-evaluating backends stay gated.
 (put 'eglot-flymake-backend 'flymake-always-safe t)
+;; Helix's buffer keys: g a returns to the last buffer, g n / g p cycle.
+(hel-keymap-global-set :state 'normal
+  "g a" #'mode-line-other-buffer
+  "g n" #'next-buffer
+  "g p" #'previous-buffer)
+
 (hel-keymap-global-set :state 'normal
   "] d" #'flymake-goto-next-error
   "[ d" #'flymake-goto-prev-error)
@@ -640,4 +646,12 @@
             '(menu-item "M-x commands" execute-extended-command))
 (keymap-set altaria-leader-map "k"
 	    '(menu-item "Documentation" altaria-documentation))
+(defun altaria-code-action ()
+  "Pick a language-server code action (quick fix, refactor) at point."
+  (interactive)
+  (unless (eglot-managed-p)
+    (user-error "No language server in this buffer"))
+  (call-interactively #'eglot-code-actions))
+(keymap-set altaria-leader-map "a"
+            '(menu-item "Code action" altaria-code-action))
 (hel-keymap-global-set :state 'normal "SPC" altaria-leader-map)
