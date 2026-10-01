@@ -549,6 +549,17 @@
 (require 'kkp)
 (global-kkp-mode 1)
 (keymap-global-set "s-c" #'altaria-clipboard-copy)
+;; Cmd+V needs nothing here: Ghostty sends the clipboard as a bracketed
+;; paste, which Emacs inserts at the cursor.  Cmd+Z and Cmd+Shift+Z reach
+;; Emacs because Ghostty's own undo/redo bindings are removed (see its
+;; config): Hel's undo/redo in normal state, Emacs's elsewhere.
+(keymap-global-set "s-z" #'undo-only)
+(keymap-global-set "s-Z" #'undo-redo)
+(keymap-global-set "S-s-z" #'undo-redo)
+(hel-keymap-global-set :state 'normal
+  "s-z" #'hel-undo
+  "s-Z" #'hel-redo
+  "S-s-z" #'hel-redo)
 
 ;; Built-in which-key displays the Space menu after a short pause.
 (require 'which-key)

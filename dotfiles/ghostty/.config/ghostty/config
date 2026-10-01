@@ -16,3 +16,8 @@ adjust-cursor-thickness = 200%
 # Cmd+C copies Ghostty's own selection when there is one; otherwise the key
 # goes to the program, so terminal Emacs can copy its selection.
 keybind = performable:super+c=copy_to_clipboard:mixed
+
+# Cmd+Z / Cmd+Shift+Z go to the program (undo/redo in Emacs) instead of
+# Ghostty's own undo, which reopens closed splits and tabs.
+keybind = super+z=unbind
+keybind = super+shift+z=unbind
