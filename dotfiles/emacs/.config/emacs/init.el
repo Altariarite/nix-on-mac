@@ -206,8 +206,10 @@
 (add-to-list 'eglot-server-programs '(elixir-mode . ("expert" "--stdio")))
 (add-hook 'tuareg-mode-hook #'eglot-ensure)
 (add-hook 'tuareg-mode-hook #'utop-minor-mode)
-;; Helix's goto keys that ocamllsp supports.  g r (references, built into
-;; Hel) also finds a function's callers; ocamllsp has no call hierarchy.
+;; Helix's language-server goto keys beyond Hel's g d / g r: g y (type
+;; definition), g D (declaration), g i (implementation), in any Eglot
+;; buffer.  In OCaml, g r also finds a function's callers; ocamllsp has no
+;; call hierarchy.
 (defun altaria-goto-type-definition ()
   "Jump to the definition of the type at point (list it if there are several)."
   (interactive)
@@ -220,9 +222,16 @@
   (let ((xref-show-xrefs-function #'xref-show-definitions-buffer))
     (call-interactively #'eglot-find-declaration)))
 
-(hel-keymap-set tuareg-mode-map :state 'normal
+(defun altaria-goto-implementation ()
+  "Jump to the implementation at point (list it if there are several)."
+  (interactive)
+  (let ((xref-show-xrefs-function #'xref-show-definitions-buffer))
+    (call-interactively #'eglot-find-implementation)))
+
+(hel-keymap-global-set :state 'normal
   "g y" #'altaria-goto-type-definition
-  "g D" #'altaria-goto-declaration)
+  "g D" #'altaria-goto-declaration
+  "g i" #'altaria-goto-implementation)
 
 ;; Format OCaml on save with ocamlformat.  A project's .ocamlformat still
 ;; applies; the flag also formats single files outside any project.  On a
@@ -386,10 +395,31 @@
 ;; so it is safe everywhere; code-evaluating backends stay gated.
 (put 'eglot-flymake-backend 'flymake-always-safe t)
 ;; Helix's buffer keys: g a returns to the last buffer, g n / g p cycle.
+;; g t / g c / g b go to the top, center, and bottom of the window, as in
+;; Helix (Hel had put comment-dwim and a backward jump on g c / g b; Cmd+/
+;; and Space c comment, and g w still jumps to a word).
+(defun altaria-window-top ()
+  "Move to the first line shown in the window."
+  (interactive)
+  (move-to-window-line 0))
+
+(defun altaria-window-center ()
+  "Move to the middle line of the window."
+  (interactive)
+  (move-to-window-line nil))
+
+(defun altaria-window-bottom ()
+  "Move to the last line shown in the window."
+  (interactive)
+  (move-to-window-line -1))
+
 (hel-keymap-global-set :state 'normal
   "g a" #'mode-line-other-buffer
   "g n" #'next-buffer
-  "g p" #'previous-buffer)
+  "g p" #'previous-buffer
+  "g t" #'altaria-window-top
+  "g c" #'altaria-window-center
+  "g b" #'altaria-window-bottom)
 
 (hel-keymap-global-set :state 'normal
   "] d" #'flymake-goto-next-error
@@ -626,9 +656,9 @@
             '(menu-item "File picker" altaria-file-picker))
 (keymap-set altaria-leader-map "F"
             '(menu-item "Find file in current directory" find-file))
-(keymap-set altaria-leader-map "c"
+(keymap-set altaria-leader-map "x"
             '(menu-item "Evaluate code" altaria-evaluate))
-(keymap-set altaria-leader-map "r"
+(keymap-set altaria-leader-map "i"
             '(menu-item "Language REPL" altaria-repl))
 (keymap-set altaria-leader-map "y"
             '(menu-item "Copy to clipboard" altaria-clipboard-copy))
@@ -654,4 +684,40 @@
   (call-interactively #'eglot-code-actions))
 (keymap-set altaria-leader-map "a"
             '(menu-item "Code action" altaria-code-action))
+
+;; The rest of Helix's Space menu.
+(defun altaria-rename ()
+  "Rename the symbol at point everywhere, through the language server."
+  (interactive)
+  (unless (eglot-managed-p)
+    (user-error "No language server in this buffer"))
+  (call-interactively #'eglot-rename))
+
+(defun altaria-explorer ()
+  "Browse the project root (or the current directory outside a project)."
+  (interactive)
+  (dired (if-let* ((project (project-current)))
+             (project-root project)
+           default-directory)))
+
+(keymap-set altaria-leader-map "r"
+            '(menu-item "Rename symbol" altaria-rename))
+(keymap-set altaria-leader-map "c"
+            '(menu-item "Toggle comment" altaria-toggle-comment))
+(keymap-set altaria-leader-map "s"
+            '(menu-item "Symbol picker" imenu))
+(keymap-set altaria-leader-map "S"
+            '(menu-item "Workspace symbol picker" xref-find-apropos))
+(keymap-set altaria-leader-map "d"
+            '(menu-item "Diagnostics" flymake-show-buffer-diagnostics))
+(keymap-set altaria-leader-map "D"
+            '(menu-item "Workspace diagnostics" flymake-show-project-diagnostics))
+(keymap-set altaria-leader-map "/"
+            '(menu-item "Search in project" project-find-regexp))
+(keymap-set altaria-leader-map "e"
+            '(menu-item "File explorer (project root)" altaria-explorer))
+(keymap-set altaria-leader-map "E"
+            '(menu-item "File explorer (this file's directory)" dired-jump))
+(keymap-set altaria-leader-map "?"
+            '(menu-item "M-x commands" execute-extended-command))
 (hel-keymap-global-set :state 'normal "SPC" altaria-leader-map)

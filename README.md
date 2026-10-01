@@ -213,11 +213,11 @@ In a Lisp source buffer:
 - `g d`: visit a definition through SLY; `[ x`: return.
 - `g c`: who calls the function at point; `g C`: what it calls; `g r`: who
   references the global variable at point. Results open in a list: `j`/`k`
-  move, `Enter` jumps, `q` closes. In Lisp buffers `g c` replaces Hel's comment
-  toggle; `M-;` still comments.
-- `Space c` (normal state), or `C-c C-c`: compile/evaluate the current top-level definition.
+  move, `Enter` jumps, `q` closes. In Lisp buffers `g c` replaces the
+  window-center jump; `Space c` and `Cmd+/` still comment.
+- `Space x` (normal state), or `C-c C-c`: compile/evaluate the current top-level definition.
 - `C-c C-k`: compile and load the file.
-- `Space r` (normal state), or `C-c C-z`: switch to the REPL.
+- `Space i` (normal state), or `C-c C-z`: switch to the REPL.
 - `C-x C-s`: save; `C-x C-c`: exit Emacs.
 - Saving a Lisp file re-indents it with SLY's Common Lisp rules and removes
   trailing whitespace. With Parinfer on, it asks once before fixing a badly
@@ -264,7 +264,7 @@ selection touches.
 It starts disabled, so you can try indentation-driven parenthesis editing per buffer.
 The Emacs package and its matching Apple Silicon native module are supplied by Nix.
 After installing a new Emacs package, restart Emacs once (config reload alone is insufficient).
-`Space c` compiles a Lisp definition. `Space r` starts SLY/SBCL when needed,
+`Space x` compiles a Lisp definition. `Space i` starts SLY/SBCL when needed,
 then switches to the existing Lisp REPL on subsequent presses in Lisp buffers.
 It also opens the Common Lisp REPL from `*scratch*`.
 The commands also support OCaml and Elixir as described below. Space still
@@ -315,15 +315,29 @@ definition history works for these jumps too.
 `Space a` offers the language server's code actions (quick fixes, refactors)
 at the cursor, as in Helix.
 
-As in Helix, `g a` returns to the previous buffer, and `g n` / `g p` go to the
-next/previous buffer.
+The `g` and `Space` keys follow Helix where Emacs has an equivalent:
+
+- `g d` definition, `g y` type definition, `g D` declaration, `g i`
+  implementation, `g r` references (any language-server buffer).
+- `g a` previous buffer, `g n` / `g p` next/previous buffer.
+- `g t` / `g c` / `g b` top, center, bottom of the window; `g w` jumps to a
+  word by label.
+- `Space r` renames the symbol everywhere, `Space c` toggles comments,
+  `Space s` / `Space S` pick a symbol in the file / workspace, `Space d` /
+  `Space D` list diagnostics for the file / project, `Space /` searches the
+  project, `Space e` / `Space E` browse the project root / the file's
+  directory, and `Space ?` runs a command by name.
+
+They differ from Helix in a few places: `Space x` evaluates code and
+`Space i` opens the REPL (Helix has neither), `Space w` saves, `Space R`
+reloads the config, `Space q` quits, and `Space b` opens Ibuffer.
 
 The Space menu follows the current source language:
 
 | Key | Common Lisp | OCaml | Elixir |
 | --- | --- | --- | --- |
-| `Space c` | Compile current definition | Evaluate selected region or current phrase | Evaluate selected region or entire buffer |
-| `Space r` | SLY/SBCL | UTop | IEx (`iex -S mix` inside a Mix project) |
+| `Space x` | Compile current definition | Evaluate selected region or current phrase | Evaluate selected region or entire buffer |
+| `Space i` | SLY/SBCL | UTop | IEx (`iex -S mix` inside a Mix project) |
 | `Space k` | Describe symbol | Language-server documentation | Language-server documentation |
 
 Language-server warnings and errors (the underlined text) show their message
@@ -352,7 +366,7 @@ use the compiler from this pinned nixpkgs, matching the globally installed
 `ocamllsp`. Run `dune build` first for complete project information. Plain
 UTop starts without project libraries; for a Dune project, set buffer-local
 `utop-command` to `"dune utop . -- -emacs"` (for example with `M-x
-set-variable`) before starting UTop. `Space c` is interactive evaluation;
+set-variable`) before starting UTop. `Space x` is interactive evaluation;
 use `M-x compile` for whole-project `dune build` or `mix compile`.
 
 Hel uses its native editing model and cursor shapes: a vertical line in
