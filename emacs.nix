@@ -39,4 +39,5 @@ epkgs.emacsWithPackages (epkgs: [
   epkgs.inf-elixir
   epkgs.nix-mode
   epkgs.kkp
+  epkgs.markdown-mode
 ])

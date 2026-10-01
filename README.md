@@ -307,6 +307,10 @@ history. `[ x` or `Alt+Left` goes back; `] x` or `Alt+Right` goes forward.
 `Tab` visits links and Enter follows them. Web links open in built-in EWW,
 where the same back/forward keys work. `q` closes the documentation window
 and returns to the previous view. Help and EWW each keep their own history.
+Language-server documentation arrives as Markdown and is rendered with
+`markdown-mode`: headings and inline code are styled, the Markdown markup is
+hidden, and tagged code blocks (Elixir signatures and specs, OCaml examples)
+use the language's own highlighting.
 
 Launch Emacs from the project's `nd` shell so Eglot, UTop, and IEx inherit
 the project's compiler, dependencies, and environment. OCaml projects should

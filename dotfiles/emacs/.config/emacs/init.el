@@ -178,6 +178,11 @@
 
 ;; OCaml and Elixir use the language servers already managed by Nix.
 (require 'eglot)
+;; Language servers send documentation as Markdown; with markdown-mode
+;; loaded, Eglot renders it (headings, emphasis, highlighted code examples).
+(require 'markdown-mode)
+;; Code examples tagged "ocaml" are highlighted with Tuareg.
+(add-to-list 'markdown-code-lang-modes '("ocaml" . tuareg-mode))
 (require 'tuareg)
 (add-to-list 'auto-mode-alist '("\\.ml[ily]?\\'" . tuareg-mode))
 (require 'utop)
