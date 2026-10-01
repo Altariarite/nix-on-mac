@@ -25,6 +25,7 @@ with pkgs;
   helix
   (import ./emacs.nix { inherit pkgs; })
   zellij
+  herdr
   tealdeer
   vifm
 

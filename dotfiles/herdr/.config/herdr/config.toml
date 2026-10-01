@@ -1,0 +1,21 @@
+onboarding = false
+# herdr: tmux-like multiplexer that tracks coding agents in its panes.
+# Docs: https://herdr.dev/docs/configuration/
+
+[keys]
+# Ctrl+B (herdr's default) is Hel's page-up in Emacs, and macOS takes
+# Ctrl+Space for switching input sources, so use Ctrl+Q, which Emacs and
+# fish leave free.
+prefix = "ctrl+q"
+
+[ui]
+# Workspaces cover what tabs would, so drop the tab row while a workspace
+# has only one tab (undocumented option, present in herdr 0.9.1).
+hide_tab_bar_when_single_tab = true
+
+[ui.toast]
+delivery = "off"
+
+[theme]
+name = "catppuccin-latte"
+auto_switch = false

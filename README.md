@@ -167,7 +167,11 @@ Link dotfiles into `$HOME` without rebuilding the package bundle:
 ```sh
 cd ~/.config/nix
 stow -d dotfiles -t ~ zsh starship tealdeer helix zellij fish ghostty vifm emacs
+stow --no-folding -d dotfiles -t ~ herdr
 ```
+
+herdr writes its sessions and sockets into `~/.config/herdr`, so only its
+`config.toml` is linked (`--no-folding`); the directory itself stays local.
 
 Preview Stow changes first:
 
@@ -268,6 +272,20 @@ its label, or press Enter for the most recent location. `C-g` cancels.
 `[ x` goes back one step; `] x` goes forward again.
 
 `Space Space` opens the Emacs command palette (`M-x`) from Hel normal state.
+
+## herdr
+
+[herdr](https://herdr.dev) is a tmux-like multiplexer that also tracks coding
+agents running in its panes (working, blocked, done). Start or reattach with
+`herdr`. Its prefix is `Ctrl+Q` (set in `dotfiles/herdr/.config/herdr/config.toml`):
+herdr's default `Ctrl+B` is Hel's page-up in Emacs, and macOS uses `Ctrl+Space`
+to switch input sources. `Ctrl+Q ?` lists the keybindings and `Ctrl+Q q`
+detaches. herdr opens in navigation mode; press `Enter` to type into the pane.
+
+Terminal Emacs works inside herdr unchanged: `Ctrl+B` and other keys reach
+Emacs, the cursor changes shape by Hel state (herdr shows it blinking), and
+`Cmd+C` still copies the Emacs selection, because herdr passes the kitty
+keyboard protocol through from Ghostty.
 
 ## OCaml, Elixir, and documentation in Emacs
 
