@@ -279,6 +279,9 @@ Saving formats `.ml`/`.mli` with `ocamlformat`, using the project's
 `.ocamlformat` when there is one and the default style for single files; a file
 with a syntax error saves unformatted and the error is shown.
 Elixir (`.ex`, `.exs`) uses elixir-mode, IEx, and Eglot with `expert --stdio`.
+Elixir buffers show `:ok` and `:error` as `✓` and `✗` (so `{:ok, user}` reads
+`{✓, user}`) and dim `do`/`end` in code; the original text reappears under the
+cursor, and `M-x prettify-symbols-mode` toggles the symbols.
 Nix (`.nix`) uses nix-mode and Eglot with `nil`, so `Space k` shows Nix docs.
 Eglot starts automatically in source buffers and provides completion,
 diagnostics, `g d` definitions, and `g r` references. The existing `Space j`

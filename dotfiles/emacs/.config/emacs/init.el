@@ -15,6 +15,7 @@
 
 ;; Clicks, selection, and the scroll wheel also work in terminal Emacs.
 (xterm-mouse-mode 1)
+(global-hl-line-mode 1)
 
 ;; Minibuffer prompts list candidates vertically with fuzzy matching,
 ;; like Helix's pickers: type part of a name, then C-n/C-p and Enter.
@@ -240,6 +241,46 @@
 (hel-set-initial-state 'inf-elixir-mode 'insert)
 (setq inf-elixir-prefer-umbrella nil)
 
+;; Easier-to-read Elixir: operators shown as symbols, {:ok, x} as {✓, x},
+;; and do/end dimmed so the code itself stands out.  The original text
+;; reappears under the cursor, and `M-x prettify-symbols-mode' toggles it.
+(defface altaria-elixir-block-face '((t :inherit shadow))
+  "Face for Elixir's do/end block keywords.")
+
+(defun altaria-elixir-match-block-keyword (limit)
+  "Find the next do or end before LIMIT that is code, not a string or comment."
+  (let (found)
+    (while (and (not found)
+                (re-search-forward "\\_<\\(do\\|end\\)\\_>" limit t))
+      ;; syntax-ppss moves point and runs searches of its own; undo both.
+      (unless (save-excursion
+                (save-match-data (nth 8 (syntax-ppss (match-beginning 0)))))
+        (setq found t)))
+    found))
+
+(font-lock-add-keywords
+ 'elixir-mode '((altaria-elixir-match-block-keyword 1 'altaria-elixir-block-face t)))
+
+(defun altaria-elixir-prettify ()
+  "Show common Elixir operators and result atoms as symbols."
+  (setq-local prettify-symbols-alist
+              '(
+                (":ok" . ?✓) (":error" . ?✗)))
+  (setq-local prettify-symbols-unprettify-at-point 'right-edge)
+  (prettify-symbols-mode 1))
+
+(add-hook 'elixir-mode-hook #'altaria-elixir-prettify)
+
+(defun altaria-elixir-refresh-buffers ()
+  "Re-apply the current symbols and do/end dimming to open Elixir buffers."
+  (dolist (buffer (buffer-list))
+    (with-current-buffer buffer
+      (when (derived-mode-p 'elixir-mode)
+        ;; Off first, so symbols removed from the list stop showing.
+        (prettify-symbols-mode -1)
+        (altaria-elixir-prettify)
+        (font-lock-flush)))))
+
 ;; Up/Down recall earlier input at every REPL prompt, like a terminal.
 ;; They apply in insert state; normal state keeps them for moving the cursor.
 (hel-keymap-set sly-mrepl-mode-map :state 'insert
@@ -422,6 +463,8 @@
   "Reload the saved Emacs configuration."
   (interactive)
   (load-file (expand-file-name "~/.config/emacs/init.el"))
+  ;; Hook-based settings only reach new buffers; update open ones too.
+  (altaria-elixir-refresh-buffers)
   (message "Emacs configuration reloaded"))
 
 ;; Helix-style file picker: every file below the project root (Git-aware,
