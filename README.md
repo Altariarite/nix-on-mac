@@ -327,7 +327,10 @@ hides diagnostics from files outside `trusted-content`; `init.el` exempts
 Eglot's checker, which only displays what the language server reports.
 
 Documentation opens in a focused Help buffer to the right of the current
-window, in the terminal as in the graphical frame. Repeated lookups reuse
+window, in the terminal as in the graphical frame. When a REPL (UTop, SLY,
+IEx) is showing, it opens instead in part of the REPL's window, so the code
+window is left alone: the bottom of a REPL beside the code, or the right side
+of a REPL below it. Repeated lookups reuse
 that window and retain page
 history. `[ x` or `Alt+Left` goes back; `] x` or `Alt+Right` goes forward.
 `Tab` visits links and Enter follows them. Web links open in built-in EWW,

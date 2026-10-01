@@ -391,10 +391,32 @@
 
 ;; Documentation opens beside the current window (right half), as it does
 ;; in a wide graphical frame, even when the terminal is too narrow for
-;; Emacs to split side by side on its own.
+;; Emacs to split side by side on its own.  When a REPL is showing, the
+;; documentation instead takes part of the REPL's window, so the code window
+;; stays as it is: the bottom of a REPL beside the code, or the right side
+;; of a REPL below it.
+(defun altaria-display-in-repl (buffer alist)
+  "Display BUFFER in a window split off a visible REPL."
+  (when-let* ((repl (seq-find
+                     (lambda (window)
+                       (with-current-buffer (window-buffer window)
+                         (derived-mode-p 'utop-mode 'sly-mrepl-mode
+                                         'inf-elixir-mode)))
+                     (window-list)))
+              (window (ignore-errors
+                        ;; A full-width REPL sits below the code.
+                        (if (and (window-full-width-p repl)
+                                 (not (window-full-height-p repl)))
+                            (split-window repl (- (round (* 0.5 (window-width repl))))
+                                          'right)
+                          (split-window repl (- (round (* 0.4 (window-height repl))))
+                                        'below)))))
+    (window--display-buffer buffer window 'window alist)))
+
 (add-to-list 'display-buffer-alist
              '("\\`\\*Help\\*\\'"
-               (display-buffer-reuse-window display-buffer-in-direction)
+               (display-buffer-reuse-window altaria-display-in-repl
+                                            display-buffer-in-direction)
                (direction . right)
                (window-width . 0.5)))
 
