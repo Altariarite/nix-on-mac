@@ -273,6 +273,10 @@ its label, or press Enter for the most recent location. `C-g` cancels.
 
 `Space Space` opens the Emacs command palette (`M-x`) from Hel normal state.
 
+Buffers reload on their own when their file changes on disk, for example
+when a coding agent edits it; a buffer with unsaved edits is left alone.
+`g R` reloads the current buffer by hand.
+
 ## herdr
 
 [herdr](https://herdr.dev) is a tmux-like multiplexer that also tracks coding

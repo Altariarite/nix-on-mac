@@ -17,6 +17,13 @@
 (xterm-mouse-mode 1)
 (global-hl-line-mode 1)
 
+;; Reload buffers when their file changes on disk (e.g. an agent edits it).
+;; Buffers with unsaved edits are left alone. File notifications (kqueue)
+;; replace polling, and the "Reverting buffer" messages stay quiet.
+(setq auto-revert-avoid-polling t
+      auto-revert-verbose nil)
+(global-auto-revert-mode 1)
+
 ;; Minibuffer prompts list candidates vertically with fuzzy matching,
 ;; like Helix's pickers: type part of a name, then C-n/C-p and Enter.
 (fido-vertical-mode 1)
@@ -24,6 +31,10 @@
 ;; Use Hel's native cursor shapes and editing commands.
 (require 'hel)
 (hel-mode 1)
+
+;; g R reloads the buffer from disk by hand (g r is Hel's find-references).
+(hel-keymap-global-set :state 'normal
+  "g R" #'revert-buffer)
 
 ;; Terminal Emacs can't draw Hel's cursor shapes itself (a bar between
 ;; characters in normal state, a block while typing), so tell the terminal
