@@ -258,6 +258,8 @@ pastes: Emacs turns on the kitty keyboard protocol (`kkp`), and Ghostty passes
 Shift+drag selection is still copied by Ghostty).
 `Cmd+Z` undoes and `Cmd+Shift+Z` redoes: Ghostty's own undo (reopening a
 closed split or tab) is unbound so those keys reach Emacs.
+`Cmd+/` comments or uncomments the current line, or every line the
+selection touches.
 `Space t` toggles Parinfer smart mode in the current Lisp source buffer.
 It starts disabled, so you can try indentation-driven parenthesis editing per buffer.
 The Emacs package and its matching Apple Silicon native module are supplied by Nix.

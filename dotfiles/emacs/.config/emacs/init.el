@@ -560,6 +560,26 @@
   "s-z" #'hel-undo
   "s-Z" #'hel-redo
   "S-s-z" #'hel-redo)
+;; Cmd+/ toggles comments on the current line, or on every line the
+;; selection touches, as in other macOS editors.  The selection is kept,
+;; so Cmd+/ again undoes it.
+(defun altaria-toggle-comment ()
+  "Comment or uncomment the current line or the selected lines."
+  (interactive "*")
+  (let* ((region (use-region-p))
+         (beg (save-excursion
+                (goto-char (if region (region-beginning) (point)))
+                (line-beginning-position)))
+         (end (save-excursion
+                (goto-char (if region (region-end) (point)))
+                ;; A selection ending at the start of a line (Hel's x)
+                ;; doesn't include that line.
+                (when (and region (bolp) (> (point) beg))
+                  (backward-char))
+                (line-end-position)))
+         (deactivate-mark nil))
+    (comment-or-uncomment-region beg end)))
+(keymap-global-set "s-/" #'altaria-toggle-comment)
 
 ;; Built-in which-key displays the Space menu after a short pause.
 (require 'which-key)
