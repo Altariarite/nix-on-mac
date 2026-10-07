@@ -197,13 +197,17 @@
 (require 'tuareg)
 (add-to-list 'auto-mode-alist '("\\.ml[ily]?\\'" . tuareg-mode))
 (require 'utop)
-(require 'elixir-mode)
+;; Elixir uses the built-in tree-sitter mode: a real parser drives
+;; highlighting, indentation, sexp movement, and do/fn ... end matching.
+(add-to-list 'auto-mode-alist '("\\.exs?\\'" . elixir-ts-mode))
+(add-to-list 'auto-mode-alist '("mix\\.lock\\'" . elixir-ts-mode))
+(add-to-list 'auto-mode-alist '("\\.heex\\'" . heex-ts-mode))
 (require 'inf-elixir)
 (setq utop-edit-command nil)
 (dolist (marker '("dune-project" "mix.exs"))
   (add-to-list 'project-vc-extra-root-markers marker))
 (add-to-list 'eglot-server-programs '(tuareg-mode . ("ocamllsp")))
-(add-to-list 'eglot-server-programs '(elixir-mode . ("expert" "--stdio")))
+(add-to-list 'eglot-server-programs '(elixir-ts-mode . ("expert" "--stdio")))
 (add-hook 'tuareg-mode-hook #'eglot-ensure)
 (add-hook 'tuareg-mode-hook #'utop-minor-mode)
 ;; Helix's language-server goto keys beyond Hel's g d / g r: g y (type
@@ -259,7 +263,7 @@
 
 (add-hook 'tuareg-mode-hook
           (lambda () (add-hook 'before-save-hook #'altaria-format-ocaml nil t)))
-(add-hook 'elixir-mode-hook #'eglot-ensure)
+(add-hook 'elixir-ts-mode-hook #'eglot-ensure)
 ;; Nix uses nil, the language server Helix also uses.
 (add-hook 'nix-mode-hook #'eglot-ensure)
 (hel-set-initial-state 'utop-mode 'insert)
@@ -272,19 +276,21 @@
 (defface altaria-elixir-block-face '((t :inherit shadow))
   "Face for Elixir's do/end block keywords.")
 
-(defun altaria-elixir-match-block-keyword (limit)
-  "Find the next do or end before LIMIT that is code, not a string or comment."
-  (let (found)
-    (while (and (not found)
-                (re-search-forward "\\_<\\(do\\|end\\)\\_>" limit t))
-      ;; syntax-ppss moves point and runs searches of its own; undo both.
-      (unless (save-excursion
-                (save-match-data (nth 8 (syntax-ppss (match-beginning 0)))))
-        (setq found t)))
-    found))
+(defun altaria-elixir-dim-blocks ()
+  "Dim the parser's do and end tokens; do: keywords and atoms stay as they are."
+  (unless (seq-some (lambda (level) (memq 'altaria-block level))
+                    treesit-font-lock-feature-list)
+    (setq-local treesit-font-lock-settings
+                (append treesit-font-lock-settings
+                        (treesit-font-lock-rules
+                         :language 'elixir :feature 'altaria-block :override t
+                         '((["do" "end"] @altaria-elixir-block-face)))))
+    (setq-local treesit-font-lock-feature-list
+                (cons (cons 'altaria-block (car treesit-font-lock-feature-list))
+                      (cdr treesit-font-lock-feature-list)))
+    (treesit-font-lock-recompute-features)))
 
-(font-lock-add-keywords
- 'elixir-mode '((altaria-elixir-match-block-keyword 1 'altaria-elixir-block-face t)))
+(add-hook 'elixir-ts-mode-hook #'altaria-elixir-dim-blocks)
 
 (defun altaria-elixir-prettify ()
   "Show common Elixir operators and result atoms as symbols."
@@ -294,16 +300,17 @@
   (setq-local prettify-symbols-unprettify-at-point 'right-edge)
   (prettify-symbols-mode 1))
 
-(add-hook 'elixir-mode-hook #'altaria-elixir-prettify)
+(add-hook 'elixir-ts-mode-hook #'altaria-elixir-prettify)
 
 (defun altaria-elixir-refresh-buffers ()
   "Re-apply the current symbols and do/end dimming to open Elixir buffers."
   (dolist (buffer (buffer-list))
     (with-current-buffer buffer
-      (when (derived-mode-p 'elixir-mode)
+      (when (derived-mode-p 'elixir-ts-mode)
         ;; Off first, so symbols removed from the list stop showing.
         (prettify-symbols-mode -1)
         (altaria-elixir-prettify)
+        (altaria-elixir-dim-blocks)
         (font-lock-flush)))))
 
 ;; Up/Down recall earlier input at every REPL prompt, like a terminal.
@@ -335,7 +342,7 @@
   "Open the REPL for the current language."
   (interactive)
   (cond ((derived-mode-p 'tuareg-mode 'utop-mode) (utop))
-        ((derived-mode-p 'elixir-mode) (altaria-elixir-repl))
+        ((derived-mode-p 'elixir-ts-mode) (altaria-elixir-repl))
         ((derived-mode-p 'inf-elixir-mode) (goto-char (point-max)))
         ((or (equal (buffer-name) "*scratch*")
              (derived-mode-p 'lisp-mode 'sly-mrepl-mode))
@@ -349,7 +356,7 @@
         ((derived-mode-p 'tuareg-mode)
          (call-interactively (if (use-region-p) #'utop-eval-region
                                #'utop-eval-phrase)))
-        ((derived-mode-p 'elixir-mode)
+        ((derived-mode-p 'elixir-ts-mode)
          (save-window-excursion (altaria-elixir-repl))
          (call-interactively (if (use-region-p) #'inf-elixir-send-region
                                #'inf-elixir-send-buffer)))
@@ -453,7 +460,7 @@
 ;; added back once Eglot manages the buffer.
 (add-hook 'eglot-managed-mode-hook
           (lambda ()
-            (when (derived-mode-p 'elixir-mode)
+            (when (derived-mode-p 'elixir-ts-mode)
               (add-hook 'flymake-diagnostic-functions #'altaria-credo-flymake nil t))))
 ;; Helix's buffer keys: g a returns to the last buffer, g n / g p cycle.
 ;; g t / g c / g b go to the top, center, and bottom of the window, as in

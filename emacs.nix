@@ -35,7 +35,11 @@ epkgs.emacsWithPackages (epkgs: [
   parinferNative
   epkgs.tuareg
   epkgs.utop
-  epkgs.elixir-mode
+  # Parsers for the built-in elixir-ts-mode; HEEx covers ~H templates.
+  (epkgs.treesit-grammars.with-grammars (grammars: [
+    grammars.tree-sitter-elixir
+    grammars.tree-sitter-heex
+  ]))
   epkgs.inf-elixir
   epkgs.nix-mode
   epkgs.kkp
