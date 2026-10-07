@@ -58,7 +58,7 @@ with pkgs;
   nil
   taplo
   beamPackages.expert # Elixir language server (used by Helix and VS Code)
-  beamPackages.elixir # `mix format`, the Elixir formatter Helix invokes
+  beamPackages.elixir_1_20 # `mix format` for Helix; Expert type-checks with this Elixir
   ocamlPackages.ocaml-lsp
   ocamlPackages.ocamlformat
   ocamlPackages.utop
