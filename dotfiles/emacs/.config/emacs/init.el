@@ -394,6 +394,67 @@
 ;; backend only displays what the already-running language server reports,
 ;; so it is safe everywhere; code-evaluating backends stay gated.
 (put 'eglot-flymake-backend 'flymake-always-safe t)
+;; Running mix evaluates the project's code, so Credo runs only in trusted
+;; projects: the private ones under ~/projects.
+(add-to-list 'trusted-content "~/projects/private/")
+
+;; Credo findings appear alongside Expert's diagnostics in Elixir buffers
+;; of projects that depend on Credo.  The unsaved buffer is piped to
+;; `mix credo', so findings follow edits without saving.
+(defvar-local altaria-credo--process nil)
+
+(defun altaria-credo-flymake (report-fn &rest _args)
+  "Flymake backend: report Credo's findings for the current buffer."
+  (let ((root (locate-dominating-file default-directory "mix.exs")))
+    (when (process-live-p altaria-credo--process)
+      (kill-process altaria-credo--process))
+    (if (not (and root buffer-file-name
+                  (file-directory-p (expand-file-name "deps/credo" root))))
+        (funcall report-fn nil)
+      (let* ((source (current-buffer))
+             (default-directory root)
+             (file (file-relative-name buffer-file-name root)))
+        (setq altaria-credo--process
+              (make-process
+               :name "credo" :noquery t :connection-type 'pipe
+               :buffer (generate-new-buffer " *credo*")
+               :command (list "mix" "credo" "--strict" "--format" "flycheck"
+                              "--read-from-stdin" file)
+               :sentinel
+               (lambda (process _event)
+                 (when (memq (process-status process) '(exit signal))
+                   (unwind-protect
+                       (when (eq process (buffer-local-value
+                                          'altaria-credo--process source))
+                         (funcall report-fn
+                                  (altaria-credo--diagnostics process source)))
+                     (kill-buffer (process-buffer process)))))))
+        (process-send-region altaria-credo--process (point-min) (point-max))
+        (process-send-eof altaria-credo--process)))))
+
+(defun altaria-credo--diagnostics (process source)
+  "Read Credo's `file:line:column: C: message' lines for buffer SOURCE."
+  (with-current-buffer (process-buffer process)
+    (goto-char (point-min))
+    (let (diagnostics)
+      (while (re-search-forward
+              "^[^:\n]+:\\([0-9]+\\):\\(?:\\([0-9]+\\):\\)? \\([A-Z]\\): \\(.*\\)$"
+              nil t)
+        (let* ((line (string-to-number (match-string 1)))
+               (column (and (match-string 2) (string-to-number (match-string 2))))
+               (type (if (equal (match-string 3) "W") :warning :note))
+               (message (concat "Credo: " (match-string 4)))
+               (region (flymake-diag-region source line column)))
+          (push (flymake-make-diagnostic source (car region) (cdr region) type message)
+                diagnostics)))
+      diagnostics)))
+
+;; Eglot replaces the buffer's flymake backends with its own, so Credo is
+;; added back once Eglot manages the buffer.
+(add-hook 'eglot-managed-mode-hook
+          (lambda ()
+            (when (derived-mode-p 'elixir-mode)
+              (add-hook 'flymake-diagnostic-functions #'altaria-credo-flymake nil t))))
 ;; Helix's buffer keys: g a returns to the last buffer, g n / g p cycle.
 ;; g t / g c / g b go to the top, center, and bottom of the window, as in
 ;; Helix (Hel had put comment-dwim and a backward jump on g c / g b; Cmd+/
