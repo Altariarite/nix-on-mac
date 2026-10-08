@@ -1,5 +1,16 @@
 theme = Alabaster
-font-family = SF Mono
+# Liga SFMono Nerd Font: SF Mono with Fira Code's ligatures (|> as a
+# triangle, -> as an arrow, == != <= :: ...) and Nerd Font icons.  Also
+# installed, to switch to:
+#   font-family = Liga Hack (Hack with the same Fira Code ligatures)
+#   font-family = psudoFont Liga Mono (Menlo; its |> barely changes)
+#   font-family = Lilex Nerd Font Mono
+#   font-family = Paper Mono, with font-feature = ss01 (ligatures) and
+#   adjust-cell-height = 8
+#   font-family = SF Mono (Apple's original, no ligatures)
+# Liga SFMono, Liga Hack and Paper Mono are not marked monospace, so plain
+# `ghostty +list-fonts' omits them; add --family="..." to see them.
+font-family = Liga SFMono Nerd Font
 font-size = 17
 command = /Users/altaria/.nix-profile/bin/fish
 
