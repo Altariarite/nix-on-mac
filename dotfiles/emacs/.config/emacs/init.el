@@ -271,10 +271,26 @@
 (setq inf-elixir-prefer-umbrella nil)
 
 ;; Easier-to-read Elixir: operators shown as symbols, {:ok, x} as {✓, x},
-;; captures as λ with arguments ① ② ③ (& &1.name as λ ①.name), and do/end dimmed so the code itself stands out.  The original text
-;; reappears under the cursor, and `M-x prettify-symbols-mode' toggles it.
+;; captures as λ with arguments ① ② ③ (& &1.name as λ ①.name), and do/end
+;; faded nearly into the background so the code itself stands out.  The
+;; original text reappears under the cursor, and `M-x prettify-symbols-mode'
+;; toggles it.
 (defface altaria-elixir-block-face '((t :inherit shadow))
   "Face for Elixir's do/end block keywords.")
+
+(defun altaria-elixir-fade-block-face (&rest _)
+  "Colour do/end 30% of the way from the background to the text colour.
+Recomputed when a theme is enabled; keeps `shadow' if colours are unknown."
+  (require 'color)
+  (let ((text (color-name-to-rgb (face-foreground 'default nil t)))
+        (background (color-name-to-rgb (face-background 'default nil t))))
+    (when (and text background)
+      (set-face-foreground 'altaria-elixir-block-face
+                           (apply #'color-rgb-to-hex
+                                  (append (color-blend text background 0.3) '(2)))))))
+
+(altaria-elixir-fade-block-face)
+(add-hook 'enable-theme-functions #'altaria-elixir-fade-block-face)
 
 (defun altaria-elixir-dim-blocks ()
   "Dim the parser's do and end tokens; do: keywords and atoms stay as they are."
