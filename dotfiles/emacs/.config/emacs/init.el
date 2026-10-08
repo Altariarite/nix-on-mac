@@ -271,7 +271,7 @@
 (setq inf-elixir-prefer-umbrella nil)
 
 ;; Easier-to-read Elixir: operators shown as symbols, {:ok, x} as {✓, x},
-;; and do/end dimmed so the code itself stands out.  The original text
+;; captures as λ with arguments ① ② ③ (& &1.name as λ ①.name), and do/end dimmed so the code itself stands out.  The original text
 ;; reappears under the cursor, and `M-x prettify-symbols-mode' toggles it.
 (defface altaria-elixir-block-face '((t :inherit shadow))
   "Face for Elixir's do/end block keywords.")
@@ -292,11 +292,28 @@
 
 (add-hook 'elixir-ts-mode-hook #'altaria-elixir-dim-blocks)
 
+(defun altaria-elixir-capture-p (start end match)
+  "Non-nil if MATCH from START to END is a capture & or argument &1.
+The parse tree tells captures apart from && and &&&, and from text in
+strings and comments; other symbols use the default check."
+  (if (not (string-prefix-p "&" match))
+      (prettify-symbols-default-compose-p start end match)
+    (let* ((token (treesit-node-at start 'elixir))
+           (operator (treesit-node-parent token)))
+      (and (equal (treesit-node-type token) "&")
+           (equal (treesit-node-type operator) "unary_operator")
+           ;; &1 is the whole operator; a capture & is just the token.
+           (= end (if (equal match "&")
+                      (treesit-node-end token)
+                    (treesit-node-end operator)))))))
+
 (defun altaria-elixir-prettify ()
-  "Show common Elixir operators and result atoms as symbols."
+  "Show common Elixir operators, captures, and result atoms as symbols."
   (setq-local prettify-symbols-alist
-              '(
-                (":ok" . ?✓) (":error" . ?✗)))
+              '((":ok" . ?✓) (":error" . ?✗)
+                ("&" . ?λ)
+                ("&1" . ?①) ("&2" . ?②) ("&3" . ?③) ("&4" . ?④) ("&5" . ?⑤)))
+  (setq-local prettify-symbols-compose-predicate #'altaria-elixir-capture-p)
   (setq-local prettify-symbols-unprettify-at-point 'right-edge)
   (prettify-symbols-mode 1))
 
