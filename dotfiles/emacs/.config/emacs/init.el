@@ -427,6 +427,21 @@ strings and comments; other symbols use the default check."
     (call-interactively #'describe-symbol))
    (t (user-error "Open a source buffer with SLY or Eglot connected"))))
 
+;; Lines changed since the last commit are marked at the left edge: added,
+;; changed, or removed.  In jj repositories vc-jj answers instead of Git
+;; (it puts itself first, which matters where .jj and .git sit together),
+;; so the marks show what the current change (@) does relative to its
+;; parent.  Marks follow edits before saving.
+(require 'vc-jj)
+(require 'diff-hl)
+(require 'diff-hl-flydiff)
+(require 'diff-hl-margin)
+(global-diff-hl-mode 1)
+(diff-hl-flydiff-mode 1)
+;; A terminal frame has no fringe, so draw the marks in the margin there.
+(unless (display-graphic-p)
+  (diff-hl-margin-mode 1))
+
 ;; Diagnostics (the underlined warnings/errors) show their message when the
 ;; cursor is on them; ] d / [ d jump between them, as in Helix.
 (require 'flymake)

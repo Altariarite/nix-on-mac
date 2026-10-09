@@ -41,6 +41,10 @@ epkgs.emacsWithPackages (epkgs: [
     grammars.tree-sitter-heex
   ]))
   epkgs.inf-elixir
+  # The development build: diff-hl calls vc-jj functions that the 0.5
+  # release does not have yet.
+  epkgs.elpaDevelPackages.vc-jj
+  epkgs.diff-hl
   epkgs.nix-mode
   epkgs.kkp
   epkgs.markdown-mode
