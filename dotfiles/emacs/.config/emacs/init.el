@@ -269,6 +269,53 @@
 (hel-set-initial-state 'utop-mode 'insert)
 (hel-set-initial-state 'inf-elixir-mode 'insert)
 (setq inf-elixir-prefer-umbrella nil)
+;; Tab in the IEx REPL completes the way IEx does in a terminal: the text
+;; before the cursor goes to IEx.Autocomplete in the running session, so
+;; project modules count.  The question and answer are redirected out of
+;; the REPL buffer, which needs the IEx prompt to know when IEx is done.
+(defun altaria-iex-expand (process code)
+  "Return IEx's completion of CODE as (HINT . ENTRIES), asking PROCESS."
+  (let* ((encoded (base64-encode-string (encode-coding-string code 'utf-8) t))
+         (command
+          ;; Inside fn, hint and entries stay out of the session's variables.
+          (concat "(fn -> {_, hint, entries} = IEx.Autocomplete.expand(Enum.reverse("
+                  "String.to_charlist(Base.decode64!(\"" encoded "\"))));"
+                  " IO.puts(\"h:#{hint}\"); Enum.each(entries, &IO.puts(\"e:#{&1}\")) end).();"
+                  " IEx.dont_display_result()"))
+         (lines (comint-redirect-results-list-from-process
+                 process command "^[he]:.*$" 0)))
+    (cons (string-remove-prefix "h:" (or (seq-find (lambda (l) (string-prefix-p "h:" l)) lines) ""))
+          (mapcar (lambda (l) (string-remove-prefix "e:" l))
+                  (seq-filter (lambda (l) (string-prefix-p "e:" l)) lines)))))
+
+(defun altaria-iex-completion-at-point ()
+  "Complete the module, function or name before point from IEx."
+  (when-let* ((process (get-buffer-process (current-buffer)))
+              ((>= (point) (process-mark process)))
+              ;; Ask only at a prompt; while IEx is busy the answer would
+              ;; wait for it, and Emacs with it.
+              ((save-excursion (goto-char (process-mark process))
+                               (forward-line 0)
+                               (looking-at comint-prompt-regexp))))
+    (let* ((start (save-excursion (skip-chars-backward "[:alnum:]_?!") (point)))
+           (prefix (buffer-substring-no-properties start (point)))
+           (answer (altaria-iex-expand
+                    process (buffer-substring-no-properties (process-mark process) (point))))
+           ;; Several matches come as names with arity (map/2); one match
+           ;; comes as the missing text.
+           (candidates (if (cdr answer)
+                           (delete-dups (mapcar (lambda (entry)
+                                                  (replace-regexp-in-string "/[0-9]+\\'" "" entry))
+                                                (cdr answer)))
+                         (unless (string-empty-p (car answer))
+                           (list (concat prefix (car answer)))))))
+      (when candidates
+        (list start (point) candidates :exclusive 'no)))))
+
+(add-hook 'inf-elixir-mode-hook
+          (lambda ()
+            (setq-local comint-prompt-regexp "^\\(?:iex\\|\\.\\.\\.\\)([^)]*)[0-9]*> ")
+            (add-hook 'completion-at-point-functions #'altaria-iex-completion-at-point nil t)))
 
 ;; Easier-to-read Elixir: operators shown as symbols, {:ok, x} as {✓, x},
 ;; captures as λ with arguments ① ② ③ (& &1.name as λ ①.name), and do/end
@@ -356,7 +403,8 @@ strings and comments; other symbols use the default check."
   "<down>" #'utop-history-goto-next)
 (hel-keymap-set inf-elixir-mode-map :state 'insert
   "<up>" #'comint-previous-input
-  "<down>" #'comint-next-input)
+  "<down>" #'comint-next-input
+  "TAB" #'completion-at-point)
 
 (defun altaria-elixir-repl ()
   "Start or reuse IEx for the nearest Mix project or this source buffer."
