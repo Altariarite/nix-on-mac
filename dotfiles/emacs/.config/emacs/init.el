@@ -410,6 +410,12 @@ strings and comments; other symbols use the default check."
 
 ;; Without documentation (Expert gives no hover for a private function),
 ;; show the definition's source to the right instead.  The cursor stays put.
+;; In that window q closes it, or brings back what the window showed before.
+(defun altaria-display-beside (buffer alist)
+  "Show BUFFER in the window to the right of the selected one, if any."
+  (when-let* ((window (window-in-direction 'right)))
+    (window--display-buffer buffer window 'reuse alist)))
+
 (defun altaria-definition-beside ()
   "Show the definition of the symbol at point in the window to the right."
   (let* ((backend (xref-find-backend))
@@ -418,10 +424,23 @@ strings and comments; other symbols use the default check."
     (if (null definitions)
         (message "No documentation or definition at point")
       (let* ((marker (xref-location-marker (xref-item-location (car definitions))))
-             (window (or (window-in-direction 'right) (split-window-right))))
-        (set-window-buffer window (marker-buffer marker))
+             (window (display-buffer (marker-buffer marker)
+                                     '((altaria-display-beside display-buffer-in-direction)
+                                       (direction . right)
+                                       (inhibit-same-window . t)))))
+        (set-window-parameter window 'altaria-definition t)
         (set-window-point window marker)
         (with-selected-window window (recenter 0))))))
+
+(defun altaria-quit-definition ()
+  "Close the window Space k opened to show a definition."
+  (interactive)
+  (if (window-parameter nil 'altaria-definition)
+      (progn (set-window-parameter nil 'altaria-definition nil)
+             (quit-window))
+    (message "q closes a definition shown by Space k")))
+
+(hel-keymap-global-set :state 'normal "q" #'altaria-quit-definition)
 
 (defun altaria-documentation ()
   "Explore documentation for the symbol at point, or its source if it has none."
