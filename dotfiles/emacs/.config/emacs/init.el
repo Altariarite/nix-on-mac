@@ -816,6 +816,49 @@ strings and comments; other symbols use the default check."
              (project-root project)
            default-directory)))
 
+;; Space g, like Helix's changed-file picker, lists what the current jj
+;; change (@) touches, marked M (modified), A (added), D (deleted), R
+;; (renamed) or C (copied); renames and copies open the new path.
+(defun altaria-jj-changed-files (root)
+  "Return (LABEL . PATH) for each file the jj change @ in ROOT touches."
+  (let ((default-directory root))
+    (with-temp-buffer
+      ;; jj prints warnings on stderr; keep only the summary on stdout.
+      (unless (zerop (call-process "jj" nil (list t nil) nil
+                                   "diff" "--summary" "-r" "@" "--color" "never"))
+        (user-error "jj diff failed in %s" root))
+      (mapcar (lambda (line)
+                (let ((path (substring line 2)))
+                  ;; Renames read "dir/{old => new}" or "old => new".
+                  (when (string-match "\\`\\(.*\\){\\(.*\\) => \\(.*\\)}\\(.*\\)\\'" path)
+                    (setq path (concat (match-string 1 path) (match-string 3 path)
+                                       (match-string 4 path))))
+                  (when (string-match "\\` *\\(?:.* => \\)\\(.*\\)\\'" path)
+                    (setq path (match-string 1 path)))
+                  (cons line path)))
+              (split-string (buffer-string) "\n" t)))))
+
+(defun altaria-changed-file-picker ()
+  "Open a file that the current jj change (@) modifies."
+  (interactive)
+  (let* ((root (or (locate-dominating-file default-directory ".jj")
+                   (user-error "Not in a jj repository")))
+         (files (or (altaria-jj-changed-files root)
+                    (user-error "The current change (@) has no file changes")))
+         (choice (completing-read "Changed in @: " files nil t))
+         (file (expand-file-name (cdr (assoc choice files)) root)))
+    (if (file-exists-p file)
+        (find-file file)
+      (user-error "%s was deleted in this change" (file-relative-name file root)))))
+
+(keymap-set altaria-leader-map "g"
+            '(menu-item "Changed files in this change" altaria-changed-file-picker))
+;; Space V opens majutsu, a Magit-style jj panel: the log with the current
+;; change and its files.  ? there lists its commands.  It loads on first
+;; use, together with Magit, which it builds on.
+(autoload 'majutsu-log "majutsu" nil t)
+(keymap-set altaria-leader-map "V"
+            '(menu-item "jj panel (majutsu)" majutsu-log))
 (keymap-set altaria-leader-map "r"
             '(menu-item "Rename symbol" altaria-rename))
 (keymap-set altaria-leader-map "c"

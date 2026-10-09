@@ -45,6 +45,7 @@ epkgs.emacsWithPackages (epkgs: [
   # release does not have yet.
   epkgs.elpaDevelPackages.vc-jj
   epkgs.diff-hl
+  epkgs.majutsu # Magit-style jj interface
   epkgs.nix-mode
   epkgs.kkp
   epkgs.markdown-mode
