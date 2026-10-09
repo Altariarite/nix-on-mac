@@ -408,8 +408,23 @@ strings and comments; other symbols use the default check."
       (with-current-buffer standard-output
         (insert text)))))
 
+;; Without documentation (Expert gives no hover for a private function),
+;; show the definition's source to the right instead.  The cursor stays put.
+(defun altaria-definition-beside ()
+  "Show the definition of the symbol at point in the window to the right."
+  (let* ((backend (xref-find-backend))
+         (identifier (xref-backend-identifier-at-point backend))
+         (definitions (and identifier (xref-backend-definitions backend identifier))))
+    (if (null definitions)
+        (message "No documentation or definition at point")
+      (let* ((marker (xref-location-marker (xref-item-location (car definitions))))
+             (window (or (window-in-direction 'right) (split-window-right))))
+        (set-window-buffer window (marker-buffer marker))
+        (set-window-point window marker)
+        (with-selected-window window (recenter 0))))))
+
 (defun altaria-documentation ()
-  "Explore documentation for the symbol at point."
+  "Explore documentation for the symbol at point, or its source if it has none."
   (interactive)
   (cond
    ((derived-mode-p 'lisp-mode 'sly-mrepl-mode)
@@ -417,12 +432,18 @@ strings and comments; other symbols use the default check."
       (sly-eval-async `(slynk:describe-symbol ,symbol)
         (lambda (text) (altaria-documentation-page text)))))
    ((eglot-managed-p)
-    (unless (eglot-hover-eldoc-function
-             (lambda (text &rest _)
-               (if (and text (not (string-empty-p text)))
-                   (altaria-documentation-page text)
-                 (message "No documentation at point"))))
-      (user-error "This language server does not provide hover documentation")))
+    (let ((buffer (current-buffer))
+          (position (point)))
+      (unless (eglot-hover-eldoc-function
+               (lambda (text &rest _)
+                 (if (and text (not (string-empty-p text)))
+                     (altaria-documentation-page text)
+                   ;; The answer arrives later; look up the symbol it was for.
+                   (with-current-buffer buffer
+                     (save-excursion
+                       (goto-char position)
+                       (altaria-definition-beside))))))
+        (user-error "This language server does not provide hover documentation"))))
    ((derived-mode-p 'emacs-lisp-mode 'lisp-interaction-mode)
     (call-interactively #'describe-symbol))
    (t (user-error "Open a source buffer with SLY or Eglot connected"))))
