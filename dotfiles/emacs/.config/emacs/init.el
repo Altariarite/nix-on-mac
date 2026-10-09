@@ -441,6 +441,15 @@ strings and comments; other symbols use the default check."
 ;; A terminal frame has no fringe, so draw the marks in the margin there.
 (unless (display-graphic-p)
   (diff-hl-margin-mode 1))
+;; ] g / [ g move to the next or previous change, as in Helix.  Space h
+;; shows the change under the cursor inline, old lines against new; in that
+;; view n / p step through changes, r reverts this one, c copies the old
+;; text, and q closes it.
+(require 'diff-hl-show-hunk)
+(require 'diff-hl-show-hunk-inline)
+(hel-keymap-global-set :state 'normal
+  "] g" #'diff-hl-next-hunk
+  "[ g" #'diff-hl-previous-hunk)
 
 ;; Diagnostics (the underlined warnings/errors) show their message when the
 ;; cursor is on them; ] d / [ d jump between them, as in Helix.
@@ -853,6 +862,8 @@ strings and comments; other symbols use the default check."
 
 (keymap-set altaria-leader-map "g"
             '(menu-item "Changed files in this change" altaria-changed-file-picker))
+(keymap-set altaria-leader-map "h"
+            '(menu-item "Show change at cursor" diff-hl-show-hunk))
 ;; Space V opens majutsu, a Magit-style jj panel: the log with the current
 ;; change and its files.  ? there lists its commands.  It loads on first
 ;; use, together with Magit, which it builds on.
